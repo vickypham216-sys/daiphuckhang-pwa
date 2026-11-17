@@ -1,0 +1,73 @@
+@import "./fonts.css";
+
+/* Màu tạm cho tới khi có nhận diện thương hiệu Đại Phúc Khang. Mọi class dùng
+   biến, không viết màu trực tiếp, để đổi màu chỉ cần sửa khối này. */
+:root {
+  --chinh: #0f5c8c;
+  --nen: #f4f7fa;
+  --the: #ffffff;
+  --chu: #1a2330;
+  --chu-phu: #5b6878;
+  --vien: #d6dde5;
+  --loi: #b42318;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  color: var(--chu);
+  background: var(--nen);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100dvh; }
+
+.khung-giua {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.the {
+  width: 100%;
+  max-width: 380px;
+  background: var(--the);
+  border: 1px solid var(--vien);
+  border-radius: 12px;
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+.the h1 { margin: 0; font-size: 1.4rem; color: var(--chinh); }
+
+label { display: grid; gap: 6px; font-weight: 500; }
+input {
+  font: inherit;
+  padding: 12px;
+  border: 1px solid var(--vien);
+  border-radius: 8px;
+  font-size: 16px; /* dưới 16px thì iPhone tự phóng to khi chạm vào ô */
+}
+button {
+  font: inherit;
+  font-weight: 700;
+  padding: 12px 16px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--chinh);
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; }
+.nut-phu { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); padding: 6px 12px; min-height: 36px; }
+.loi { color: var(--loi); margin: 0; }
+
+.thanh-tren {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: var(--chinh);
+  color: #fff;
+}
+.thanh-tren span { margin-left: auto; font-size: 0.9rem; opacity: 0.9; }
+.noi-dung { padding: 16px; }

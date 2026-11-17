@@ -5,7 +5,7 @@
 mục sau thắng.
 
 - Mã nguồn: <https://github.com/vickypham216-sys/daiphuckhang-pwa>
-- Firebase project: **chưa tạo** (xem `TAO_FIREBASE.md`)
+- Firebase project: `daiphuckhang`, Firestore `asia-southeast1` (Singapore)
 - App đang chạy: chưa có
 - Cập nhật lần cuối: 17/11/2026
 
@@ -98,3 +98,22 @@ các địa điểm nào. Có phụ xe, có thể có 2-3 phụ xe, chỉ có 1 
 
 ~~Đã trả lời 17/11: xe chạy nhiều tuyến/ngày; tuyến không cố định; có 2–3 phụ
 xe; một kho.~~
+
+---
+
+## 3. Nhật ký
+
+### Khung app (17/11/2026)
+
+- Vite + React + TypeScript + PWA, nền giống MIA. Chưa có Cloud Functions.
+- Cấu hình web Firebase để trong `.env` và **có commit**: các giá trị đó công
+  khai trong mã app, không phải bí mật. MIA phải lấy cấu hình lúc build vì
+  không commit; ở đây bỏ được bước đó.
+- Đăng nhập email/mật khẩu. Hồ sơ `NguoiDung/{uid}` (ID trùng uid Auth) có
+  `HoTen`, `VaiTro`, `TrangThai`. Vai trò tạm: Admin, ThuKho, Sales, TaiXe,
+  PhuXe — chờ Vicky chốt.
+- `firestore.rules`: mặc định từ chối; người dùng chỉ đọc hồ sơ mình, chỉ
+  Admin sửa hồ sơ; danh mục SanPham / KhachHang / Xe: nhân viên đọc, Admin sửa.
+- Chưa có icon/logo: điện thoại chưa hiện nút "Cài app".
+- Đã thử: build OK; màn đăng nhập gọi tới Auth thật của project, sai mật
+  khẩu báo đúng "Sai email hoặc mật khẩu".

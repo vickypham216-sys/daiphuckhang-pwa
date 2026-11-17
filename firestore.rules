@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// PHÂN QUYỀN FIRESTORE — Đại Phúc Khang
+//
+// Mặc định TỪ CHỐI mọi thứ. Collection nào chưa khai ở đây thì app không đọc
+// không ghi được. Thêm màn mới = thêm luật cho collection của màn đó.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function daDangNhap() {
+      return request.auth != null;
+    }
+
+    function hoSo() {
+      return get(/databases/$(database)/documents/NguoiDung/$(request.auth.uid)).data;
+    }
+
+    function coHoSo() {
+      return daDangNhap() && exists(/databases/$(database)/documents/NguoiDung/$(request.auth.uid));
+    }
+
+    // Tài khoản ngưng = mất vai trò. Hồ sơ không có TrangThai = đang dùng.
+    function vaiTro() {
+      return coHoSo() && hoSo().get('TrangThai', 'Active') != 'Inactive' ? hoSo().VaiTro : '';
+    }
+
+    function laAdmin() {
+      return vaiTro() == 'Admin';
+    }
+
+    function laNhanVien() {
+      return vaiTro() in ['Admin', 'ThuKho', 'Sales', 'TaiXe', 'PhuXe'];
+    }
+
+    // Hồ sơ người dùng: tự đọc hồ sơ mình; chỉ Admin tạo/sửa.
+    // Người dùng KHÔNG tự sửa được hồ sơ mình — nếu được thì tự nâng mình lên Admin.
+    match /NguoiDung/{uid} {
+      allow read: if (daDangNhap() && request.auth.uid == uid) || laAdmin();
+      allow write: if laAdmin();
+    }
+
+    // Danh mục: mọi nhân viên đọc; chỉ Admin sửa.
+    match /SanPham/{id} {
+      allow read: if laNhanVien();
+      allow write: if laAdmin();
+    }
+    match /KhachHang/{id} {
+      allow read: if laNhanVien();
+      allow write: if laAdmin();
+    }
+    match /Xe/{id} {
+      allow read: if laNhanVien();
+      allow write: if laAdmin();
+    }
+  }
+}

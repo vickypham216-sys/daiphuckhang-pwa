@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Ban dung san cua vite-plugin-pwa khi chay dev
+dev-dist
+
+# Harness xem giao dien dung tam roi xoa - xem BOI_CANH.md
+dev/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# biến môi trường thật, không commit
+.env.local
+
+# Chia khoa toan quyen vao du lieu cong ty - TUYET DOI khong commit
+service-account.json
+*-service-account*.json
+
+# Bo dem deploy cua Firebase CLI - rieng tung may, tu sinh lai
+.firebase/
