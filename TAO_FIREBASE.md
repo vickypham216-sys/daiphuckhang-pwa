@@ -9,11 +9,15 @@ trên cloud nên không có quyền vào Firebase, phải nhờ Vicky làm bư�
    - Tên: `daiphuckhang` (nếu ID `daiphuckhang` đã có người dùng, Firebase sẽ
      tự thêm đuôi; ghi lại **Project ID** thật).
    - Google Analytics: **tắt** (không cần).
-3. Vào **Build → Firestore Database → Create database**.
+3. Vào **Databases & Storage → Firestore → Create database**.
    - Location: **`asia-southeast1` (Singapore)**, giống MIA. ⚠️ Chọn rồi
      không đổi được.
    - Chế độ: **Production mode**.
-4. Vào **Build → Authentication → Get started** và bật **Email/Password**.
+4. Vào **Security → Authentication → Get started**, rồi tab **Sign-in method**
+   → **Email/Password** → bật **Enable** (dòng đầu) → **Save**. Không bật
+   "Email link (passwordless sign-in)".
+   (Console Firebase mới không còn mục "Build"; nếu lạc thì gõ
+   "Authentication" vào ô **Search for products**.)
 5. Vào **Project settings (bánh răng) → General → Your apps** và bấm biểu
    tượng **Web `</>`**.
    - Tên app: `daiphuckhang-pwa`, tick **Also set up Firebase Hosting**.
