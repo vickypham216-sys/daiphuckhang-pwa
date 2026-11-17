@@ -52,17 +52,49 @@ Hệ quả cho thiết kế:
    xế lần trước" như MIA.
 4. Tồn hàng trên xe tính theo **xe**. Hôm đổi tài xế, hàng trên xe vẫn đúng.
 
+### KHÔNG có tuyến cố định — đơn vị lõi là CHUYẾN (17/11/2026)
+
+⚠️ **Thay phần "Xe và tuyến" ở mục trên.** Vicky trả lời: *"1 xe đi nhiều
+tuyến trong 1 ngày. Tuyến đi không cố định. Mỗi ngày sẽ gán xe đi giao cho
+các địa điểm nào. Có phụ xe, có thể có 2-3 phụ xe, chỉ có 1 kho."*
+
+- **Không có danh mục Tuyến.** "Tuyến" chỉ là danh sách điểm giao của một
+  chuyến, được lập mỗi ngày.
+- **Chuyến** = ngày + xe + chuyến thứ mấy trong ngày + **tổ xe** (1 tài xế,
+  0–3 phụ xe) + danh sách đơn/điểm giao. Tổ xe gắn với **chuyến**, không gắn
+  với xe hay ngày. Lý do: giữa 2 chuyến trong ngày có thể đổi người.
+- **Điều phối** (gán đơn vào chuyến) là màn hình trung tâm, dùng mỗi ngày.
+  Màn này phải nhanh nhất app.
+- Khách **không** thuộc tuyến hay tài xế nào. Thông tin điền sẵn lấy theo
+  **khách** (địa chỉ, giá, phí ship lần trước).
+- **Một kho.** Không cần chọn kho trên chứng từ.
+- Mô hình chứng từ giữ như MIA, nhưng thay "tài xế" bằng "chuyến":
+  ```
+  Đơn hàng       →  MỘT khách
+  Chuyến         →  MỘT xe, MỘT tổ xe, NHIỀU đơn
+  Phiếu xuất kho →  MỘT chuyến                 →  trừ tồn kho, cộng hàng trên xe
+  Phiếu giao     →  MỘT khách, trong một chuyến →  vỏ bình + tiền
+  Phiếu trả hàng →  MỘT chuyến, khi về kho      →  cộng lại tồn kho
+  ```
+
 ---
 
 ## 2. Cần Vicky trả lời trước khi dựng lõi
 
-1. **Thất thoát cuối ngày ghi cho ai?** Ví dụ thiếu 3 vỏ và 200.000đ khi anh A
-   lái xe 51C. Khoản đó ghi nợ anh A (người), hay treo trên xe 51C / chuyến?
-   Câu trả lời quyết định cách đối soát cuối ngày và báo cáo công nợ.
-2. Một xe có chạy **nhiều tuyến trong một ngày** không? Một tuyến có lúc cần
-   **2 xe** không?
-3. Có **phụ xe** không? Phụ xe có cần đăng nhập app không?
-4. Có **một kho hay nhiều kho**?
-5. Sản phẩm: chỉ bình có vỏ (cọc vỏ) hay có cả nước đóng chai / thùng?
-6. Ai dùng app: Admin, kế toán, thủ kho, sales, tài xế. Có vai trò nào khác
-   không?
+1. **Thất thoát ghi cho ai?** Chuyến về thiếu 3 vỏ và 200.000đ, tổ xe gồm tài
+   xế A và phụ xe B, C. Khoản đó ghi nợ ai: tài xế, chia đều cả tổ, hay chỉ
+   ghi nhận trên chuyến để Admin xử lý tay?
+2. **Giữa 2 chuyến trong ngày, xe có về kho trả hàng thừa không?** Hay hàng
+   thừa của chuyến 1 để luôn trên xe, xuất thêm cho chuyến 2? Nếu để luôn trên
+   xe thì phải đối soát theo **xe + ngày**, không theo từng chuyến.
+3. **Ai cầm tiền thu của khách?** Chỉ tài xế, hay phụ xe cũng thu?
+4. **Phụ xe có đăng nhập app không?** Lương/thưởng của tài xế và phụ xe có
+   tính theo chuyến hoặc sản lượng không? Nếu có, app phải ghi nhận tổ xe
+   chính xác cho từng chuyến.
+5. Ai làm **điều phối** (gán đơn vào xe) mỗi sáng: Admin, sales hay thủ kho?
+6. Sản phẩm: chỉ bình có vỏ (cọc vỏ) hay có cả nước đóng chai / thùng?
+7. Ai dùng app: Admin, kế toán, thủ kho, sales, điều phối, tài xế, phụ xe. Có
+   vai trò nào khác không?
+
+~~Đã trả lời 17/11: xe chạy nhiều tuyến/ngày; tuyến không cố định; có 2–3 phụ
+xe; một kho.~~
