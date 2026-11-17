@@ -117,3 +117,22 @@ xe; một kho.~~
 - Chưa có icon/logo: điện thoại chưa hiện nút "Cài app".
 - Đã thử: build OK; màn đăng nhập gọi tới Auth thật của project, sai mật
   khẩu báo đúng "Sai email hoặc mật khẩu".
+
+### Vai trò, phụ xe, gói Blaze (17/11/2026)
+
+Vicky: *"Có vai trò điều phối, sales, kế toán. Phụ xe cũng đăng nhập app. Có
+nâng cấp gói blaze với budget limited."*
+
+- Vai trò: **Admin, DieuPhoi, Sales, KeToan, ThuKho, TaiXe, PhuXe**. ThuKho
+  giữ lại vì có một kho; Vicky chưa nói bỏ.
+- **Phụ xe có tài khoản riêng.** Tổ xe trên chuyến lưu uid từng người, không
+  lưu tên gõ tay.
+- Gói **Blaze**: dùng được Cloud Functions → Admin tạo tài khoản nhân viên
+  ngay trong app.
+- ⚠️ **Budget trên Google Cloud chỉ GỬI CẢNH BÁO, không chặn chi tiêu.** Muốn
+  chặn cứng phải tự viết hàm tắt billing, và tắt billing là app ngừng chạy
+  giữa ngày. KHÔNG làm. Chống chi phí bất thường bằng cách viết truy vấn có
+  giới hạn và theo dõi cảnh báo.
+- `HoTen` của Admin đầu tiên đang là chuỗi ví dụ; Vicky sẽ sửa sau (sửa được
+  ở màn Nhân viên khi có).
+- Đổi `firestore.rules` (thêm vai trò) — Vicky cần dán lại vào Console.

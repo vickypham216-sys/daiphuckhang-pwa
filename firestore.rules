@@ -30,7 +30,7 @@ service cloud.firestore {
     }
 
     function laNhanVien() {
-      return vaiTro() in ['Admin', 'ThuKho', 'Sales', 'TaiXe', 'PhuXe'];
+      return vaiTro() in ['Admin', 'DieuPhoi', 'Sales', 'KeToan', 'ThuKho', 'TaiXe', 'PhuXe'];
     }
 
     // Hồ sơ người dùng: tự đọc hồ sơ mình; chỉ Admin tạo/sửa.
