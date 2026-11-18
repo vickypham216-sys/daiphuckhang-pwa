@@ -26,7 +26,8 @@ Mỗi lần Claude sửa `firestore.rules`, Claude sẽ nói rõ để dán lạ
 
 Nhân viên khác về sau tạo trong app (màn Nhân viên), không cần làm tay.
 
-## 3. Đưa giao diện lên web (Firebase Hosting)
+## 3. Đưa app lên web + tự deploy luật
 
-Chưa làm. Khi khung app có màn dùng được, Claude sẽ cài GitHub tự deploy
-giống MIA (`DEPLOY_DIEN_THOAI.md` bên MIA) để Vicky không cần laptop.
+Xem `DEPLOY_DIEN_THOAI.md`. Cài xong thì GitHub tự deploy cả giao diện lẫn
+`firestore.rules` mỗi lần merge vào `main` — không phải dán luật tay ở mục 1
+nữa.

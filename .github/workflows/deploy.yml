@@ -1,0 +1,90 @@
+# Deploy app lên https://daiphuckhang.web.app — không cần laptop.
+#
+# Chạy khi: có commit mới vào main (trừ khi chỉ sửa file .md), hoặc bấm tay
+# "Run workflow" trong tab Actions trên GitHub.
+#
+# Deploy: luật bảo mật + chỉ mục Firestore, rồi giao diện (hosting).
+# Khác MIA: luật cũng deploy tự động, Vicky KHÔNG phải dán tay vào Console.
+# Mọi thay đổi luật đều qua PR được duyệt trước khi vào main.
+#
+# Cần MỘT secret: FIREBASE_SERVICE_ACCOUNT — xem DEPLOY_DIEN_THOAI.md.
+name: Deploy app
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROJECT_ID: daiphuckhang
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Build trước — lỗi là DỪNG, không deploy gì cả.
+      - run: npm run build
+
+      - name: Khoá service account
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::error::Chưa có secret FIREBASE_SERVICE_ACCOUNT — xem DEPLOY_DIEN_THOAI.md"
+            exit 1
+          fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      # Soát khoá trước khi đụng Firebase. Chỉ in email tài khoản máy và
+      # project, KHÔNG in khoá. Sửa các lỗi hay gặp khi sao chép trên điện
+      # thoại (BOM, ngoặc kép cong, chữ thừa ngoài { }, xuống dòng thật).
+      - name: Kiểm tra khoá
+        run: |
+          node -e '
+            const fs = require("fs");
+            const tep = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+            let t = fs.readFileSync(tep, "utf8").replace(/^﻿/, "").replace(/[“”]/g, "\"");
+            const dau = t.indexOf("{"), cuoi = t.lastIndexOf("}");
+            if (dau >= 0 && cuoi > dau) t = t.slice(dau, cuoi + 1);
+            let sach = "", trongChuoi = false;
+            for (let i = 0; i < t.length; i++) {
+              const ch = t[i];
+              if (trongChuoi && ch === "\\") { sach += ch + (t[i + 1] ?? ""); i++; continue; }
+              if (ch === "\"") trongChuoi = !trongChuoi;
+              if (ch === "\r") continue;
+              if (ch === "\n") { if (trongChuoi) sach += "\\n"; continue; }
+              sach += ch;
+            }
+            let k;
+            try { k = JSON.parse(sach); }
+            catch { console.error("::error::Secret không phải JSON hợp lệ — cần dán lại."); process.exit(1); }
+            fs.writeFileSync(tep, JSON.stringify(k));
+            if (k.type !== "service_account") { console.error("::error::Không phải khoá service account"); process.exit(1); }
+            console.log("Tài khoản máy:", k.client_email, "· project:", k.project_id);
+            if (k.project_id !== process.env.PROJECT_ID) { console.error("::error::Khoá của project khác:", k.project_id); process.exit(1); }
+          '
+
+      - name: Deploy luật bảo mật + chỉ mục
+        run: ./node_modules/.bin/firebase deploy --only firestore:rules,firestore:indexes --project "$PROJECT_ID" --non-interactive
+
+      - name: Deploy giao diện
+        run: ./node_modules/.bin/firebase deploy --only hosting --project "$PROJECT_ID" --non-interactive
+
+      - name: Xoá khoá
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

@@ -139,3 +139,14 @@ nâng cấp gói blaze với budget limited."*
 
 - Admin đầu tiên: `NguoiDung/xXudfeMxNoYj0Jn1G93GEUVcvxn2`, `HoTen` = Vicky.
 - Project đã lên gói **Blaze**.
+
+### Tự deploy bằng GitHub Actions (18/11/2026)
+
+- `.github/workflows/deploy.yml`: build → deploy `firestore:rules` +
+  `firestore:indexes` → deploy hosting. Chạy khi merge vào `main` hoặc bấm tay.
+- **Khác MIA: luật bảo mật deploy tự động.** Lý do: Vicky đã quên dán luật
+  (bản thêm DieuPhoi/KeToan) — luật dán tay sẽ lệch với repo. Mọi thay đổi
+  luật vẫn qua PR được duyệt.
+- Cấu hình web lấy từ `.env` có commit, không phải dò như MIA.
+- Chưa deploy Cloud Functions. Khi có function, thêm bước + vai trò cho
+  `github-deploy` (danh sách ở DEPLOY_DIEN_THOAI.md của MIA).
