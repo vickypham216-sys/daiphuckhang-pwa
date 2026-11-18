@@ -133,6 +133,9 @@ nâng cấp gói blaze với budget limited."*
   chặn cứng phải tự viết hàm tắt billing, và tắt billing là app ngừng chạy
   giữa ngày. KHÔNG làm. Chống chi phí bất thường bằng cách viết truy vấn có
   giới hạn và theo dõi cảnh báo.
-- `HoTen` của Admin đầu tiên đang là chuỗi ví dụ; Vicky sẽ sửa sau (sửa được
-  ở màn Nhân viên khi có).
 - Đổi `firestore.rules` (thêm vai trò) — Vicky cần dán lại vào Console.
+
+### Đã xong phía Firebase (18/11/2026)
+
+- Admin đầu tiên: `NguoiDung/xXudfeMxNoYj0Jn1G93GEUVcvxn2`, `HoTen` = Vicky.
+- Project đã lên gói **Blaze**.
