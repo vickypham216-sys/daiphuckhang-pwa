@@ -281,3 +281,35 @@ Vicky: *"Sales nhận đơn, sáng hôm sau điều phối gán xe"*.
   đơn, biển số, logic nhân viên.
 - **Chưa chốt: giá riêng theo khách** (đại lý vs khách lẻ). Hiện: giá mặc định,
   Sales sửa tay từng đơn.
+
+### Màn Điều phối (20/11/2026)
+
+Vicky: *"Giá giống nhau cho mọi khách, làm màn Điều phối đi"*. → **Không làm
+giá riêng theo khách.** Giá mặc định của sản phẩm; Sales vẫn sửa tay được trên
+từng đơn (khuyến mãi, làm tròn).
+
+- Tab **Điều phối** (Admin, Điều phối). Mặc định **hôm nay** (đơn Sales nhập
+  hôm qua cho ngày giao hôm nay).
+- `Chuyen`: Ngay, XeId, BienSo, SoChuyen (tự đánh theo xe trong ngày, kể cả
+  chuyến huỷ để số không bị dùng lại), TaiXe {uid, HoTen}, PhuXe[] (≤3),
+  DonIds[] **theo thứ tự giao**, TrangThai, GhiChu.
+  Trạng thái: `LapKeHoach` (Đang xếp đơn) → `DaXuatKho` → `DangGiao` →
+  `HoanThanh`; `Huy`. App chỉ ghi `LapKeHoach`/`Huy`; các bước sau để máy chủ
+  ghi ở màn Xuất kho.
+- Tạo chuyến: chọn xe → **điền sẵn tổ xe của chuyến gần nhất của xe đó** (7
+  ngày gần đây), đổi người thì sửa. Cảnh báo (không chặn) khi một người đang ở
+  chuyến khác chưa xong cùng ngày.
+- Gán đơn: tick đơn chờ → "Gán N đơn vào chuyến này". Một **transaction**: chỉ
+  ghi khi chuyến còn LapKeHoach và mọi đơn còn Moi (hai người gán trùng thì
+  người sau bị từ chối). Đơn được ghi `ChuyenId`, `TrangThai: DaGan`, `XeGan`
+  ("51C-123.45 · C1" — Sales thấy đơn đi xe nào).
+- Đổi thứ tự ↑↓, bỏ đơn ✕ (về lại "chờ"), sửa tổ xe, huỷ chuyến (chỉ khi
+  không còn đơn). Cảnh báo **vượt sức chở** khi tổng số lượng > TaiTrong của xe.
+- Luật: NguoiDung — Điều phối đọc được (để chọn người). DonHang — nhánh
+  `ganHoacBoDon()` chỉ cho đổi ChuyenId/TrangThai/XeGan và kiểm `getAfter` của
+  chuyến (còn LapKeHoach, DonIds khớp). Chuyen — không đổi ngày/xe/số chuyến,
+  không tự đặt DaXuatKho, khoá khi đã xuất kho.
+- Đã thử trên giả lập: đủ luồng trên; Sales thấy xe đã gán, không sửa được đơn
+  đã gán. Luật: Sales không tạo chuyến; gán đơn mà chuyến không chứa đơn đó,
+  sửa đơn đã gán, huỷ chuyến còn đơn, đổi xe, tự đặt "Đã xuất kho", sửa sau
+  xuất kho, bỏ đơn khỏi chuyến đã xuất kho đều bị chặn.

@@ -43,7 +43,8 @@ service cloud.firestore {
     // Admin chỉ sửa được tên, vai trò, số điện thoại; và KHÔNG đổi được vai
     // trò của chính mình (lỡ tay là mất quyền Admin, không ai cứu được).
     match /NguoiDung/{uid} {
-      allow read: if (daDangNhap() && request.auth.uid == uid) || laAdmin();
+      // Điều phối đọc được để chọn tài xế / phụ xe cho chuyến.
+      allow read: if (daDangNhap() && request.auth.uid == uid) || vaiTro() in ['Admin', 'DieuPhoi'];
       allow create, delete: if false;
       allow update: if laAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['HoTen', 'VaiTro', 'SoDienThoai'])
@@ -110,13 +111,63 @@ service cloud.firestore {
         && donHopLe(request.resource.data)
         && request.resource.data.TrangThai == 'Moi'
         && request.resource.data.TaoBoi == request.auth.uid;
-      allow update: if nguoiNhanDon()
+      allow update: if (nguoiNhanDon()
         && resource.data.TrangThai == 'Moi'
         && request.resource.data.TrangThai in ['Moi', 'Huy']
         && request.resource.data.TaoBoi == resource.data.TaoBoi
         && donHopLe(request.resource.data)
         && (request.resource.data.TrangThai == 'Moi'
-            || (request.resource.data.LyDoHuy is string && request.resource.data.LyDoHuy.size() > 0));
+            || (request.resource.data.LyDoHuy is string && request.resource.data.LyDoHuy.size() > 0)))
+        || ganHoacBoDon(id);
+      allow delete: if false;
+    }
+
+    // ── ĐIỀU PHỐI ───────────────────────────────────────────────────────
+    function laDieuPhoi() {
+      return vaiTro() in ['Admin', 'DieuPhoi'];
+    }
+    // Gán đơn vào chuyến / bỏ ra: chỉ đụng ChuyenId, TrangThai, XeGan; chuyến
+    // phải còn "LapKeHoach" và danh sách đơn của chuyến (SAU lần ghi này) phải
+    // khớp — app ghi đơn và chuyến trong cùng một transaction.
+    function ganHoacBoDon(id) {
+      let moi = request.resource.data;
+      let cu = resource.data;
+      return laDieuPhoi()
+        && moi.diff(cu).affectedKeys().hasOnly(['ChuyenId', 'TrangThai', 'XeGan', 'SuaLuc', 'SuaBoi'])
+        && (
+          (cu.TrangThai == 'Moi' && cu.ChuyenId == null
+            && moi.TrangThai == 'DaGan' && moi.ChuyenId is string
+            && getAfter(/databases/$(database)/documents/Chuyen/$(moi.ChuyenId)).data.TrangThai == 'LapKeHoach'
+            && id in getAfter(/databases/$(database)/documents/Chuyen/$(moi.ChuyenId)).data.DonIds)
+          || (cu.TrangThai == 'DaGan' && cu.ChuyenId is string
+            && moi.TrangThai == 'Moi' && moi.ChuyenId == null
+            && getAfter(/databases/$(database)/documents/Chuyen/$(cu.ChuyenId)).data.TrangThai == 'LapKeHoach'
+            && !(id in getAfter(/databases/$(database)/documents/Chuyen/$(cu.ChuyenId)).data.DonIds))
+        );
+    }
+    function chuyenHopLe(c) {
+      return c.Ngay is string && c.Ngay.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && c.XeId is string && c.BienSo is string
+        && c.SoChuyen is int && c.SoChuyen > 0
+        && c.TaiXe.uid is string && c.TaiXe.HoTen is string
+        && c.PhuXe is list && c.PhuXe.size() <= 3
+        && c.DonIds is list && c.DonIds.size() <= 100;
+    }
+    match /Chuyen/{id} {
+      allow read: if laNhanVien();
+      allow create: if laDieuPhoi()
+        && chuyenHopLe(request.resource.data)
+        && request.resource.data.TrangThai == 'LapKeHoach'
+        && request.resource.data.DonIds.size() == 0
+        && request.resource.data.TaoBoi == request.auth.uid;
+      // Chỉ sửa khi còn "LapKeHoach". Không đổi ngày, xe, số chuyến, người
+      // tạo. Huỷ chỉ khi không còn đơn nào. Xuất kho (bước sau) do máy chủ ghi.
+      allow update: if laDieuPhoi()
+        && resource.data.TrangThai == 'LapKeHoach'
+        && chuyenHopLe(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['TaiXe', 'PhuXe', 'GhiChu', 'DonIds', 'TrangThai', 'SuaLuc', 'SuaBoi'])
+        && (request.resource.data.TrangThai == 'LapKeHoach'
+            || (request.resource.data.TrangThai == 'Huy' && request.resource.data.DonIds.size() == 0));
       allow delete: if false;
     }
   }

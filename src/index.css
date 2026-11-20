@@ -141,3 +141,19 @@ textarea { resize: vertical; }
 .bang-chi-tiet td { padding: 4px 0; }
 .bang-chi-tiet td:not(:first-child) { text-align: right; padding-left: 8px; white-space: nowrap; }
 .dong-tong td { border-top: 1px solid var(--vien); font-weight: 700; padding-top: 6px; }
+
+.canh-bao { color: #93370d; background: #fffaeb; border-radius: 8px; padding: 8px 12px; margin: 0; }
+.nhom-tick { border: 1px solid var(--vien); border-radius: 8px; padding: 8px 12px; display: grid; gap: 8px; margin: 0; }
+.nhom-tick legend { font-weight: 500; padding: 0 4px; }
+.o-tick small { color: var(--chu-phu); }
+.ds-don-cho { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.don-cho { align-items: flex-start; border: 1px solid var(--vien); border-radius: 8px; padding: 10px; }
+.don-cho input { margin-top: 2px; flex-shrink: 0; }
+.don-cho small, .ds-don-chuyen small { display: block; color: var(--chu-phu); font-weight: 400; }
+.don-cho:has(input:checked) { border-color: var(--chinh); background: #eef6fb; }
+.chuyen-dau { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ds-don-chuyen { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.ds-don-chuyen li { padding-left: 4px; }
+.ds-don-chuyen li > span:first-child { display: inline-block; max-width: calc(100% - 132px); vertical-align: top; }
+.nut-dong { float: right; display: flex; gap: 4px; }
+.nut-dong button { min-height: 36px; min-width: 36px; padding: 4px 8px; }
