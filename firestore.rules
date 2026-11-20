@@ -33,11 +33,23 @@ service cloud.firestore {
       return vaiTro() in ['Admin', 'DieuPhoi', 'Sales', 'KeToan', 'ThuKho', 'TaiXe', 'PhuXe'];
     }
 
-    // Hồ sơ người dùng: tự đọc hồ sơ mình; chỉ Admin tạo/sửa.
+    // Hồ sơ người dùng: tự đọc hồ sơ mình; Admin đọc tất cả.
     // Người dùng KHÔNG tự sửa được hồ sơ mình — nếu được thì tự nâng mình lên Admin.
+    //
+    // TẠO / NGƯNG / XOÁ chỉ qua Cloud Functions (taoNhanVien,
+    // doiTrangThaiNhanVien): phải đi cùng tài khoản đăng nhập, ghi tay ở app
+    // thì hồ sơ và tài khoản lệch nhau. Functions dùng Admin SDK, bỏ qua luật.
+    //
+    // Admin chỉ sửa được tên, vai trò, số điện thoại; và KHÔNG đổi được vai
+    // trò của chính mình (lỡ tay là mất quyền Admin, không ai cứu được).
     match /NguoiDung/{uid} {
       allow read: if (daDangNhap() && request.auth.uid == uid) || laAdmin();
-      allow write: if laAdmin();
+      allow create, delete: if false;
+      allow update: if laAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['HoTen', 'VaiTro', 'SoDienThoai'])
+        && request.resource.data.HoTen is string && request.resource.data.HoTen.size() > 0
+        && request.resource.data.VaiTro in ['Admin', 'DieuPhoi', 'Sales', 'KeToan', 'ThuKho', 'TaiXe', 'PhuXe']
+        && (uid != request.auth.uid || request.resource.data.VaiTro == resource.data.VaiTro);
     }
 
     // Danh mục: mọi nhân viên đọc; chỉ Admin sửa.

@@ -3,7 +3,9 @@
 # Chạy khi: có commit mới vào main (trừ khi chỉ sửa file .md), hoặc bấm tay
 # "Run workflow" trong tab Actions trên GitHub.
 #
-# Deploy: luật bảo mật + chỉ mục Firestore, rồi giao diện (hosting).
+# Deploy theo thứ tự: luật bảo mật + chỉ mục → máy chủ (Cloud Functions) →
+# giao diện. Máy chủ lên TRƯỚC giao diện: giao diện mới gọi hàm mới.
+# Firebase tự bỏ qua hàm không đổi mã, nên deploy máy chủ mỗi lần không tốn.
 # Khác MIA: luật cũng deploy tự động, Vicky KHÔNG phải dán tay vào Console.
 # Mọi thay đổi luật đều qua PR được duyệt trước khi vào main.
 #
@@ -36,8 +38,14 @@ jobs:
 
       - run: npm ci
 
-      # Build trước — lỗi là DỪNG, không deploy gì cả.
+      # Build + test trước — lỗi là DỪNG, không deploy gì cả.
       - run: npm run build
+
+      - name: Kiểm tra máy chủ
+        working-directory: functions
+        run: |
+          npm ci
+          npm test
 
       - name: Khoá service account
         env:
@@ -81,6 +89,10 @@ jobs:
 
       - name: Deploy luật bảo mật + chỉ mục
         run: ./node_modules/.bin/firebase deploy --only firestore:rules,firestore:indexes --project "$PROJECT_ID" --non-interactive
+
+      # --force: không hỏi chính sách dọn image cũ — máy GitHub không ai trả lời.
+      - name: Deploy máy chủ
+        run: ./node_modules/.bin/firebase deploy --only functions --project "$PROJECT_ID" --non-interactive --force
 
       - name: Deploy giao diện
         run: ./node_modules/.bin/firebase deploy --only hosting --project "$PROJECT_ID" --non-interactive

@@ -37,9 +37,13 @@ body { margin: 0; min-height: 100dvh; }
 }
 .the h1 { margin: 0; font-size: 1.4rem; color: var(--chinh); }
 
+h2 { margin: 0; font-size: 1.1rem; }
+
 label { display: grid; gap: 6px; font-weight: 500; }
-input {
+input, select {
   font: inherit;
+  background: #fff;
+  color: var(--chu);
   padding: 12px;
   border: 1px solid var(--vien);
   border-radius: 8px;
@@ -69,5 +73,31 @@ button:disabled { opacity: 0.6; }
   background: var(--chinh);
   color: #fff;
 }
-.thanh-tren span { margin-left: auto; font-size: 0.9rem; opacity: 0.9; }
+.thanh-tren strong { white-space: nowrap; }
+.thanh-tren span { margin-left: auto; font-size: 0.85rem; opacity: 0.9; text-align: right; }
+.thanh-tren .nut-phu { white-space: nowrap; }
 .noi-dung { padding: 16px; }
+
+.tin-tot { color: #05603a; background: #ecfdf3; border-radius: 8px; padding: 10px 12px; margin: 0; }
+.ghi-chu { color: var(--chu-phu); font-size: 0.9rem; margin: 0; }
+.nut-chu { background: transparent; color: var(--chinh); font-weight: 500; }
+.nut-vien { background: #fff; color: var(--chinh); border: 1px solid var(--chinh); }
+.nut-nguy { background: #fff; color: var(--loi); border: 1px solid var(--loi); }
+
+.thanh-tab { display: flex; gap: 4px; padding: 8px 16px 0; background: var(--the); border-bottom: 1px solid var(--vien); overflow-x: auto; }
+.thanh-tab button { background: transparent; color: var(--chu-phu); border-radius: 8px 8px 0 0; border-bottom: 3px solid transparent; }
+.thanh-tab button.dang-chon { color: var(--chinh); border-bottom-color: var(--chinh); }
+
+.man { display: grid; gap: 16px; max-width: 720px; margin: 0 auto; }
+.the-rong { max-width: none; }
+
+.ds-nv { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dong-nv { border: 1px solid var(--vien); border-radius: 10px; overflow: hidden; }
+.dong-nv.da-ngung { opacity: 0.6; }
+.dong-nv-dau { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; background: #fff; color: var(--chu); font-weight: 400; border-radius: 0; }
+.dong-nv-dau small { display: block; color: var(--chu-phu); margin-top: 2px; }
+.dong-nv-than { display: grid; gap: 12px; padding: 12px; background: var(--nen); }
+.dong-nv-than hr { width: 100%; border: 0; border-top: 1px solid var(--vien); margin: 4px 0; }
+.nhan-ngung { font-size: 0.8rem; color: var(--loi); white-space: nowrap; }
+.o-tick { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.o-tick input { width: 20px; height: 20px; }
