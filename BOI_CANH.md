@@ -394,3 +394,13 @@ Vicky: *"Có, tài xế bấm đã nhận đủ hàng"*.
   máy chủ cũng từ chối; tài xế khác không thấy chuyến; tài xế nhận → Đang giao;
   kho thấy đã nhận, hết nút huỷ; xuất lần 2 / huỷ sau nhận / tài xế gọi
   xuatKho đều bị máy chủ từ chối.
+- 20/11: PR #7 deploy ✅ (Actions #8).
+
+### Giao hàng — Vicky chốt trước khi làm bước 3 (20/11/2026)
+
+- **Tài xế ĐƯỢC giảm giá khi giao, bắt buộc ghi lý do**; app ghi lại để Admin
+  xem (giá gốc theo đơn vs giá giao).
+- **Chuyển khoản: app hiện mã QR đúng số tiền**; tài xế ghi "khách đã CK";
+  **kế toán đối chiếu sao kê rồi bấm xác nhận**. Cần số tài khoản công ty.
+- **Khách nhận ít hơn đơn: cho sửa số giao, bắt buộc lý do.** Hàng không giao
+  vẫn nằm trên xe, cuối chuyến đếm lại.
