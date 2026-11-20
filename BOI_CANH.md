@@ -150,3 +150,8 @@ nâng cấp gói blaze với budget limited."*
 - Cấu hình web lấy từ `.env` có commit, không phải dò như MIA.
 - Chưa deploy Cloud Functions. Khi có function, thêm bước + vai trò cho
   `github-deploy` (danh sách ở DEPLOY_DIEN_THOAI.md của MIA).
+
+### Nhánh `main` (20/11/2026)
+
+- `main` là nhánh mặc định, tạo từ nhánh làm việc đầu tiên. GitHub tự deploy
+  khi merge vào `main`. Claude làm trên nhánh riêng, mở PR, Vicky duyệt.
