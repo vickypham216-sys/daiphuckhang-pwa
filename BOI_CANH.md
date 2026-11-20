@@ -327,3 +327,22 @@ trả vỏ thì ghi nợ vỏ hay thu tiền cọc"*
 - **Có khách ghi nợ** → cần sổ công nợ tiền theo khách.
 - Vỏ: câu trả lời lặp lại câu hỏi — Claude hiểu là **tuỳ khách: hoặc ghi nợ
   vỏ, hoặc thu tiền cọc**, chọn trên từng lần giao. CHỜ Vicky xác nhận.
+- 20/11 Vicky xác nhận: **vỏ thiếu → tuỳ khách, chọn mỗi lần giao** (nợ vỏ
+  HOẶC thu cọc). **NCC đổi vỏ 1-1**: giao N bình đầy, lấy lại vỏ rỗng — app
+  theo dõi vỏ rỗng trong kho và vỏ công ty đang nợ NCC. **Thu tiền: tiền mặt
+  cho tài xế, chuyển khoản, ghi nợ trả sau.**
+
+### Kế hoạch phần kho → giao → đối soát (Claude đề xuất 20/11)
+
+Nguyên tắc như MIA: **tồn kho, vỏ, công nợ là số tài chính — chỉ máy chủ
+ghi.** App gửi phiếu; Cloud Function kiểm tra và cộng/trừ trong transaction.
+
+1. **Kho + Nhập hàng** — danh mục NCC; tồn đầu kỳ; phiếu nhập (đầy +, vỏ rỗng
+   trả NCC −, nợ vỏ NCC ±). Thủ kho có mạng → hàm gọi trực tiếp (callable).
+2. **Xuất kho theo chuyến** — số thực xuất (có thể > tổng đơn); tồn kho −,
+   hàng trên xe +; chuyến → DaXuatKho (khoá điều phối).
+3. **Giao hàng (tài xế, phải chạy KHI MẤT SÓNG)** — phiếu giao từng khách: số
+   giao, vỏ thu, nợ vỏ/cọc, tiền mặt/CK/nợ; đơn tại chỗ từ hàng dư.
+4. **Kết thúc chuyến** — đếm hàng dư, vỏ, tiền nộp → chênh lệch ghi nhận cho
+   Admin xử lý tay; chọn trả kho hoặc để lại trên xe.
+5. **Công nợ khách** (tiền, vỏ, cọc) + thu nợ.
