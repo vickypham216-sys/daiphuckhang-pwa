@@ -170,5 +170,30 @@ service cloud.firestore {
             || (request.resource.data.TrangThai == 'Huy' && request.resource.data.DonIds.size() == 0));
       allow delete: if false;
     }
+
+    // ── KHO ─────────────────────────────────────────────────────────────
+    // Tồn kho, nợ vỏ NCC, phiếu nhập, điều chỉnh tồn: CHỈ máy chủ ghi
+    // (functions: nhapHang, datTonKho). App chỉ đọc.
+    match /NhaCungCap/{id} {
+      allow read: if laNhanVien();
+      allow create, update: if laAdmin() && trangThaiHopLe() && chuoiCo('Ten', 120);
+      allow delete: if false;
+    }
+    match /TonKho/{id} {
+      allow read: if laNhanVien();
+      allow write: if false;
+    }
+    match /NoVoNCC/{id} {
+      allow read: if vaiTro() in ['Admin', 'ThuKho', 'KeToan'];
+      allow write: if false;
+    }
+    match /PhieuNhap/{id} {
+      allow read: if vaiTro() in ['Admin', 'ThuKho', 'KeToan'];
+      allow write: if false;
+    }
+    match /DieuChinhTon/{id} {
+      allow read: if vaiTro() in ['Admin', 'KeToan'];
+      allow write: if false;
+    }
   }
 }

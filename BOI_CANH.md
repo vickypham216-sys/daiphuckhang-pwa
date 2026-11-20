@@ -346,3 +346,24 @@ ghi.** App gửi phiếu; Cloud Function kiểm tra và cộng/trừ trong trans
 4. **Kết thúc chuyến** — đếm hàng dư, vỏ, tiền nộp → chênh lệch ghi nhận cho
    Admin xử lý tay; chọn trả kho hoặc để lại trên xe.
 5. **Công nợ khách** (tiền, vỏ, cọc) + thu nợ.
+
+### Bước 1: Kho + Nhập hàng (20/11/2026)
+
+- Tab **Kho** (Admin, Thủ kho; Kế toán chỉ xem). Ba mục: Tồn kho · Phiếu nhập
+  · Nhà cung cấp (Admin).
+- `TonKho/{sanPhamId}`: `Day` (hàng đầy), `VoRong` (vỏ rỗng, chỉ CoVo).
+  `NoVoNCC/{nccId__spId}.SoVo`: vỏ công ty nợ NCC (âm = NCC nợ lại).
+  `PhieuNhap`, `DieuChinhTon` (vết). **App KHÔNG ghi được** mấy collection này.
+- Hàm `nhapHang` (Admin, Thủ kho): một transaction — kiểm NCC, lấy CoVo từ
+  danh mục (không tin app), chặn trả NCC nhiều vỏ hơn vỏ rỗng đang có, ghi
+  phiếu + tồn + nợ vỏ. Vỏ trả NCC **tự điền = số nhập** (đổi 1-1), sửa được.
+- Hàm `datTonKho` (Admin): đặt tồn đầu kỳ / điều chỉnh sau kiểm kho, **bắt
+  buộc lý do**, ghi `DieuChinhTon` (trước → sau, ai, khi nào).
+- Logic thuần ở `functions/src/khoLogic.ts` + test.
+- `src/lib/goiMayChu.ts`: gọi callable + đổi lỗi thành câu tiếng Việt (dùng chung).
+- Đã thử trên giả lập: tồn đầu kỳ 50 đầy/120 vỏ → nhập 100 đầy, trả 90 vỏ
+  → 150 đầy/30 vỏ, nợ NCC 10 vỏ; trả 150 vỏ bị chặn. Thủ kho không thấy mục
+  NCC, không ghi thẳng TonKho/PhieuNhap, không gọi datTonKho; Sales không đọc
+  phiếu nhập, không gọi nhapHang.
+- Chưa có: công nợ TIỀN với NCC (trả tiền nhập hàng), trả vỏ NCC riêng lẻ
+  (không kèm nhập) — làm khi cần.
