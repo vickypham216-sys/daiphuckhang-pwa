@@ -225,3 +225,5 @@ Vẫn HỎI Vicky trước khi merge khi:
 - cần Vicky làm gì trên Google Cloud / Firebase trước (thêm quyền, bật dịch vụ);
 - thay đổi xoá / chuyển đổi dữ liệu đã có, hoặc nới luật bảo mật;
 - thay đổi quy tắc nghiệp vụ Vicky chưa chốt.
+- 20/11: Vicky thử trên app THẬT: tạo tài xế bằng SĐT và đăng nhập được. Màn
+  Nhân viên + 3 hàm máy chủ chạy đúng trên production.
