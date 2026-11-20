@@ -227,3 +227,19 @@ Vẫn HỎI Vicky trước khi merge khi:
 - thay đổi quy tắc nghiệp vụ Vicky chưa chốt.
 - 20/11: Vicky thử trên app THẬT: tạo tài xế bằng SĐT và đăng nhập được. Màn
   Nhân viên + 3 hàm máy chủ chạy đúng trên production.
+
+### Sản phẩm, giữa chuyến, thất thoát (20/11/2026)
+
+Vicky chọn:
+- **Sản phẩm: bình có vỏ (cọc vỏ) + nước chai/thùng.** Sản phẩm có cờ `CoVo`:
+  bình có vỏ thì phiếu giao phải ghi vỏ thu về / vỏ còn nợ / cọc; chai, thùng
+  thì không. Không có bình bán đứt, không có đá/hàng khác (lúc này).
+- **Giữa 2 chuyến: tuỳ chuyến.** Cuối mỗi chuyến chọn: *trả hết về kho* hoặc
+  *để lại trên xe cho chuyến sau*. Vì vậy "hàng trên xe" tính theo **xe**,
+  chạy liên tục qua các chuyến, không reset mỗi chuyến.
+  → Đề xuất của Claude (chưa chốt): bắt buộc **đếm hàng + vỏ trên xe** mỗi khi
+  hàng được để lại mà **tổ xe chuyến sau khác tổ chuyến trước**. Không đếm thì
+  thiếu hụt không biết thuộc tổ nào.
+- **Thất thoát: Admin xử lý tay.** App chỉ TÍNH và GHI chênh lệch (tiền, hàng,
+  vỏ) trên chuyến, kèm tổ xe của chuyến đó. App KHÔNG tự trừ ai. Admin quyết
+  định ghi nợ ai, bao nhiêu.
