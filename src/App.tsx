@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { dangNhap, dangXuat, guiEmailDatLaiMatKhau, usePhienDangNhap } from './lib/auth'
 import { DUOI_EMAIL_NOI_BO, emailDangNhap } from '../functions/src/nhanVienLogic'
 import NhanVien from './screens/NhanVien'
+import DanhMuc from './screens/DanhMuc'
+import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
 function ManDangNhap() {
@@ -103,9 +105,11 @@ function ThongBao({ tieuDe, noiDung }: { tieuDe: string; noiDung: string }) {
   )
 }
 
+type Man = 'trangchu' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+
 export default function App() {
   const phien = usePhienDangNhap()
-  const [man, setMan] = useState<'trangchu' | 'nhanvien'>('trangchu')
+  const [man, setMan] = useState<Man>('trangchu')
 
   if (phien.dangTai) return <main className="khung-giua">Đang tải…</main>
   if (!phien.uid) return <ManDangNhap />
@@ -120,31 +124,52 @@ export default function App() {
   if (phien.hoSo.TrangThai === 'Inactive')
     return <ThongBao tieuDe="Tài khoản đã ngưng" noiDung="Liên hệ Admin nếu đây là nhầm lẫn." />
 
-  const laAdmin = phien.hoSo.VaiTro === 'Admin'
+  const vaiTro = phien.hoSo.VaiTro
+  const laAdmin = vaiTro === 'Admin'
+  // Tab theo vai trò. Khách hàng: Sales, Điều phối cũng thêm/sửa được — họ là
+  // người gặp khách mới. Xe, Sản phẩm (giá): chỉ Admin.
+  const tab: { ma: Man; ten: string }[] = [
+    { ma: 'trangchu', ten: 'Trang chủ' },
+    ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi' ? [{ ma: 'khach' as Man, ten: 'Khách hàng' }] : []),
+    ...(laAdmin
+      ? [
+          { ma: 'sanpham' as Man, ten: 'Sản phẩm' },
+          { ma: 'xe' as Man, ten: 'Xe' },
+          { ma: 'nhanvien' as Man, ten: 'Nhân viên' },
+        ]
+      : []),
+  ]
+  const manHien = tab.some((t) => t.ma === man) ? man : 'trangchu'
+
   return (
     <div className="app">
       <header className="thanh-tren">
         <strong>Đại Phúc Khang</strong>
         <span>
-          {phien.hoSo.HoTen} · {TEN_VAI_TRO[phien.hoSo.VaiTro] ?? phien.hoSo.VaiTro}
+          {phien.hoSo.HoTen} · {TEN_VAI_TRO[vaiTro] ?? vaiTro}
         </span>
         <button className="nut-phu" onClick={() => dangXuat()}>
           Đăng xuất
         </button>
       </header>
-      {laAdmin && (
+      {tab.length > 1 && (
         <nav className="thanh-tab">
-          <button className={man === 'trangchu' ? 'dang-chon' : ''} onClick={() => setMan('trangchu')}>
-            Trang chủ
-          </button>
-          <button className={man === 'nhanvien' ? 'dang-chon' : ''} onClick={() => setMan('nhanvien')}>
-            Nhân viên
-          </button>
+          {tab.map((t) => (
+            <button key={t.ma} className={manHien === t.ma ? 'dang-chon' : ''} onClick={() => setMan(t.ma)}>
+              {t.ten}
+            </button>
+          ))}
         </nav>
       )}
       <main className="noi-dung">
-        {laAdmin && man === 'nhanvien' ? (
-          <NhanVien uidToi={phien.uid} />
+        {manHien === 'nhanvien' ? (
+          <NhanVien uidToi={phien.uid} emailToi={phien.email} />
+        ) : manHien === 'xe' ? (
+          <DanhMuc key="xe" ch={XE} uid={phien.uid} duocSua={laAdmin} />
+        ) : manHien === 'sanpham' ? (
+          <DanhMuc key="sp" ch={SAN_PHAM} uid={phien.uid} duocSua={laAdmin} />
+        ) : manHien === 'khach' ? (
+          <DanhMuc key="kh" ch={KHACH_HANG} uid={phien.uid} duocSua />
         ) : (
           <p>Khung app đã chạy. Các màn Điều phối, Xuất kho, Giao hàng sẽ được thêm vào đây.</p>
         )}

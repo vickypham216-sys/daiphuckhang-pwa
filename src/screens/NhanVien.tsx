@@ -101,7 +101,7 @@ function FormThem({ xong }: { xong: (ten: string) => void }) {
   )
 }
 
-function DongNhanVien({ nv, laToi, baoTin }: { nv: Dong; laToi: boolean; baoTin: (s: string) => void }) {
+function DongNhanVien({ nv, laToi, emailToi, baoTin }: { nv: Dong; laToi: boolean; emailToi: string | null; baoTin: (s: string) => void }) {
   const [mo, setMo] = useState(false)
   const [HoTen, setHoTen] = useState(nv.HoTen)
   const [VaiTro, setVaiTro] = useState<VaiTro>(nv.VaiTro)
@@ -133,7 +133,7 @@ function DongNhanVien({ nv, laToi, baoTin }: { nv: Dong; laToi: boolean; baoTin:
           <strong>{nv.HoTen}</strong>
           {laToi && ' (bạn)'}
           <small>
-            {TEN_VAI_TRO[nv.VaiTro] ?? nv.VaiTro} · {tenDangNhap(nv.DangNhap)}
+            {TEN_VAI_TRO[nv.VaiTro] ?? nv.VaiTro} · {tenDangNhap(nv.DangNhap ?? (laToi ? (emailToi ?? undefined) : undefined))}
           </small>
         </span>
         {ngung && <span className="nhan-ngung">Đã ngưng</span>}
@@ -203,7 +203,7 @@ function DongNhanVien({ nv, laToi, baoTin }: { nv: Dong; laToi: boolean; baoTin:
   )
 }
 
-export default function NhanVien({ uidToi }: { uidToi: string }) {
+export default function NhanVien({ uidToi, emailToi }: { uidToi: string; emailToi: string | null }) {
   const [ds, setDs] = useState<Dong[] | null>(null)
   const [loiTai, setLoiTai] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)
@@ -242,7 +242,7 @@ export default function NhanVien({ uidToi }: { uidToi: string }) {
         {!ds && !loiTai && <p>Đang tải…</p>}
         <ul className="ds-nv">
           {hien.map((nv) => (
-            <DongNhanVien key={nv.uid} nv={nv} laToi={nv.uid === uidToi} baoTin={setTin} />
+            <DongNhanVien key={nv.uid} nv={nv} laToi={nv.uid === uidToi} emailToi={emailToi} baoTin={setTin} />
           ))}
         </ul>
         {soNgung > 0 && (

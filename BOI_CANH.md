@@ -215,3 +215,49 @@ build bản B, tải lại → hiện thanh → bấm Cập nhật → ra bản 
 
 Máy đang giữ bản CŨ (chưa có BanMoi) phải tự thoát một lần: đóng HẾT tab/app
 rồi mở lại, hoặc Ctrl+Shift+R. Từ bản này trở đi không cần nữa.
+
+### Claude tự merge PR (20/11/2026)
+
+Vicky: *"Next time bạn tự merge đi"*. Từ nay Claude tự merge PR vào `main` sau
+khi build + test xanh, rồi theo dõi Actions tới ✅ và báo Vicky kết quả.
+
+Vẫn HỎI Vicky trước khi merge khi:
+- cần Vicky làm gì trên Google Cloud / Firebase trước (thêm quyền, bật dịch vụ);
+- thay đổi xoá / chuyển đổi dữ liệu đã có, hoặc nới luật bảo mật;
+- thay đổi quy tắc nghiệp vụ Vicky chưa chốt.
+- 20/11: Vicky thử trên app THẬT: tạo tài xế bằng SĐT và đăng nhập được. Màn
+  Nhân viên + 3 hàm máy chủ chạy đúng trên production.
+
+### Sản phẩm, giữa chuyến, thất thoát (20/11/2026)
+
+Vicky chọn:
+- **Sản phẩm: bình có vỏ (cọc vỏ) + nước chai/thùng.** Sản phẩm có cờ `CoVo`:
+  bình có vỏ thì phiếu giao phải ghi vỏ thu về / vỏ còn nợ / cọc; chai, thùng
+  thì không. Không có bình bán đứt, không có đá/hàng khác (lúc này).
+- **Giữa 2 chuyến: tuỳ chuyến.** Cuối mỗi chuyến chọn: *trả hết về kho* hoặc
+  *để lại trên xe cho chuyến sau*. Vì vậy "hàng trên xe" tính theo **xe**,
+  chạy liên tục qua các chuyến, không reset mỗi chuyến.
+  → Đề xuất của Claude (chưa chốt): bắt buộc **đếm hàng + vỏ trên xe** mỗi khi
+  hàng được để lại mà **tổ xe chuyến sau khác tổ chuyến trước**. Không đếm thì
+  thiếu hụt không biết thuộc tổ nào.
+- **Thất thoát: Admin xử lý tay.** App chỉ TÍNH và GHI chênh lệch (tiền, hàng,
+  vỏ) trên chuyến, kèm tổ xe của chuyến đó. App KHÔNG tự trừ ai. Admin quyết
+  định ghi nợ ai, bao nhiêu.
+
+### Màn Xe, Sản phẩm, Khách hàng (20/11/2026)
+
+- Một màn danh mục dùng chung (`src/screens/DanhMuc.tsx`), mỗi danh mục chỉ
+  khai trường (`cauHinhDanhMuc.tsx`). **Không có nút xoá** — chứng từ cũ còn
+  trỏ tới; thay bằng "Ngưng dùng". Luật cũng cấm xoá.
+- **Xe** (Admin): biển số chuẩn hoá `51C-123.45` để so trùng ("51c 12345" =
+  "51C-123.45"), tên gọi, chở tối đa, ghi chú.
+- **Sản phẩm** (Admin): tên, đơn vị (Bình/Thùng/Lốc/Chai), giá bán mặc định,
+  `CoVo` (có vỏ phải thu về), tiền cọc 1 vỏ (chỉ hiện khi CoVo).
+- **Khách hàng** (Admin, **Sales, Điều phối** — người gặp khách mới): tên, SĐT
+  (chuẩn hoá, báo trùng), địa chỉ giao (bắt buộc), ghi chú cho tài xế. Tìm
+  kiếm không dấu ("nguyen" ra "Nguyễn"). Tài xế, phụ xe, kế toán, thủ kho chỉ
+  đọc (chưa có tab; dùng ở màn sau).
+- Chưa có: giá riêng theo khách, nhập khách từ Excel.
+- Đã thử trên giả lập: thêm/trùng/ngưng cho cả 3; Sales thêm khách được, tài
+  xế không thấy tab. Luật: Sales không tạo Xe/SanPham; tài xế không tạo khách;
+  thiếu địa chỉ, giá âm, xoá, chưa đăng nhập đều bị chặn.

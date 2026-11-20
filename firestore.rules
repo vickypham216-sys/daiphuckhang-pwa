@@ -52,18 +52,42 @@ service cloud.firestore {
         && (uid != request.auth.uid || request.resource.data.VaiTro == resource.data.VaiTro);
     }
 
-    // Danh mục: mọi nhân viên đọc; chỉ Admin sửa.
-    match /SanPham/{id} {
-      allow read: if laNhanVien();
-      allow write: if laAdmin();
+    // ── DANH MỤC ────────────────────────────────────────────────────────
+    // Mọi nhân viên đọc. KHÔNG ai xoá: chứng từ cũ còn trỏ tới — ngưng thay
+    // vì xoá (TrangThai = 'Inactive').
+    function trangThaiHopLe() {
+      return request.resource.data.get('TrangThai', 'Active') in ['Active', 'Inactive'];
     }
-    match /KhachHang/{id} {
-      allow read: if laNhanVien();
-      allow write: if laAdmin();
+    function chuoiCo(truong, toiDa) {
+      return request.resource.data[truong] is string
+        && request.resource.data[truong].size() > 0
+        && request.resource.data[truong].size() <= toiDa;
     }
+    function soHoacNull(truong) {
+      return request.resource.data.get(truong, null) == null
+        || (request.resource.data[truong] is number && request.resource.data[truong] >= 0);
+    }
+
+    // Xe, Sản phẩm (có giá): chỉ Admin.
     match /Xe/{id} {
       allow read: if laNhanVien();
-      allow write: if laAdmin();
+      allow create, update: if laAdmin() && trangThaiHopLe() && chuoiCo('BienSo', 20) && soHoacNull('TaiTrong');
+      allow delete: if false;
+    }
+    match /SanPham/{id} {
+      allow read: if laNhanVien();
+      allow create, update: if laAdmin() && trangThaiHopLe() && chuoiCo('Ten', 100)
+        && request.resource.data.GiaBan is number && request.resource.data.GiaBan >= 0
+        && request.resource.data.CoVo is bool && soHoacNull('GiaCocVo');
+      allow delete: if false;
+    }
+
+    // Khách hàng: Admin, Sales, Điều phối thêm/sửa — họ là người gặp khách mới.
+    match /KhachHang/{id} {
+      allow read: if laNhanVien();
+      allow create, update: if vaiTro() in ['Admin', 'Sales', 'DieuPhoi']
+        && trangThaiHopLe() && chuoiCo('Ten', 120) && chuoiCo('DiaChi', 300);
+      allow delete: if false;
     }
   }
 }
