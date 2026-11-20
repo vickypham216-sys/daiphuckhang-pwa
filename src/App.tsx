@@ -6,6 +6,7 @@ import DanhMuc from './screens/DanhMuc'
 import DonHang from './screens/DonHang'
 import DieuPhoi from './screens/DieuPhoi'
 import Kho from './screens/Kho'
+import ChuyenCuaToi from './screens/ChuyenCuaToi'
 import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
@@ -108,11 +109,12 @@ function ThongBao({ tieuDe, noiDung }: { tieuDe: string; noiDung: string }) {
   )
 }
 
-type Man = 'trangchu' | 'kho' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+type Man = 'trangchu' | 'chuyen' | 'kho' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
 
 export default function App() {
   const phien = usePhienDangNhap()
-  const [man, setMan] = useState<Man>('trangchu')
+  // null = chưa bấm tab nào → mở màn mặc định theo vai trò.
+  const [man, setMan] = useState<Man | null>(null)
 
   if (phien.dangTai) return <main className="khung-giua">Đang tải…</main>
   if (!phien.uid) return <ManDangNhap />
@@ -134,6 +136,7 @@ export default function App() {
   const tab: { ma: Man; ten: string }[] = [
     { ma: 'trangchu', ten: 'Trang chủ' },
     ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối' }] : []),
+    ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [{ ma: 'chuyen' as Man, ten: 'Chuyến của tôi' }] : []),
     ...(laAdmin || vaiTro === 'ThuKho' || vaiTro === 'KeToan' ? [{ ma: 'kho' as Man, ten: 'Kho' }] : []),
     ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi'
       ? [
@@ -149,7 +152,8 @@ export default function App() {
         ]
       : []),
   ]
-  const manHien = tab.some((t) => t.ma === man) ? man : 'trangchu'
+  const manMacDinh: Man = vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? 'chuyen' : 'trangchu'
+  const manHien: Man = man && tab.some((t) => t.ma === man) ? man : manMacDinh
 
   return (
     <div className="app">
@@ -172,7 +176,9 @@ export default function App() {
         </nav>
       )}
       <main className="noi-dung">
-        {manHien === 'kho' ? (
+        {manHien === 'chuyen' ? (
+          <ChuyenCuaToi uid={phien.uid} />
+        ) : manHien === 'kho' ? (
           <Kho uid={phien.uid} vaiTro={vaiTro} />
         ) : manHien === 'dieuphoi' ? (
           <DieuPhoi uid={phien.uid} />

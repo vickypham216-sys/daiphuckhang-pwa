@@ -170,3 +170,13 @@ textarea { resize: vertical; }
 .bang-ton td[colspan] { text-align: left; background: var(--nen); }
 .bam-duoc { cursor: pointer; }
 .bam-duoc:hover { background: var(--nen); }
+
+h3 { margin: 4px 0 0; font-size: 1rem; }
+.bang-xuat { display: grid; gap: 6px; }
+.bang-xuat-dau, .bang-xuat-dong { display: grid; grid-template-columns: 1fr 56px 64px 72px; gap: 6px; align-items: center; }
+.bang-xuat-dau { font-size: 0.8rem; color: var(--chu-phu); }
+.bang-xuat-dong > span:not(:first-child) { text-align: right; }
+.bang-xuat-dong small { display: block; color: #93370d; font-size: 0.78rem; }
+.bang-xuat-dong input { padding: 10px 6px; text-align: right; min-width: 0; }
+.bang-to { font-size: 1.1rem; }
+.nut-to { min-height: 56px; font-size: 1.1rem; background: #067647; }

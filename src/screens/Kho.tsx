@@ -9,6 +9,7 @@ import { dinhDangSo, docSo } from '../lib/so'
 import { hienNgay, ngayVN } from '../lib/donHang'
 import DanhMuc, { type BanGhi } from './DanhMuc'
 import { NHA_CUNG_CAP } from './cauHinhDanhMuc'
+import XuatKho from './XuatKho'
 
 type CoId<T> = T & { id: string }
 interface TonKho { Ten: string; CoVo: boolean; Day: number; VoRong: number }
@@ -158,7 +159,7 @@ function FormDatTon({ sp, ton, xong, huy }: { sp: CoId<BanGhi>; ton?: TonKho; xo
 export default function Kho({ uid, vaiTro }: { uid: string; vaiTro: string }) {
   const laAdmin = vaiTro === 'Admin'
   const duocNhap = laAdmin || vaiTro === 'ThuKho'
-  const [muc, setMuc] = useState<'ton' | 'nhap' | 'ncc'>('ton')
+  const [muc, setMuc] = useState<'ton' | 'xuat' | 'nhap' | 'ncc'>(duocNhap ? 'xuat' : 'ton')
   const [moNhap, setMoNhap] = useState(false)
   const [datTon, setDatTon] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)
@@ -182,6 +183,7 @@ export default function Kho({ uid, vaiTro }: { uid: string; vaiTro: string }) {
   return (
     <div className="man">
       <div className="hang-nut nho">
+        {duocNhap && <button className={muc === 'xuat' ? '' : 'nut-vien'} onClick={() => setMuc('xuat')}>Xuất kho</button>}
         <button className={muc === 'ton' ? '' : 'nut-vien'} onClick={() => setMuc('ton')}>Tồn kho</button>
         <button className={muc === 'nhap' ? '' : 'nut-vien'} onClick={() => setMuc('nhap')}>Phiếu nhập</button>
         {laAdmin && <button className={muc === 'ncc' ? '' : 'nut-vien'} onClick={() => setMuc('ncc')}>Nhà cung cấp</button>}
@@ -189,8 +191,9 @@ export default function Kho({ uid, vaiTro }: { uid: string; vaiTro: string }) {
       {tin && <p className="tin-tot" role="status">{tin}</p>}
 
       {muc === 'ncc' && <DanhMuc key="ncc" ch={NHA_CUNG_CAP} uid={uid} duocSua={laAdmin} />}
+      {muc === 'xuat' && <XuatKho sanPham={sanPham} ton={ton} />}
 
-      {muc !== 'ncc' && duocNhap && !moNhap && (
+      {(muc === 'ton' || muc === 'nhap') && duocNhap && !moNhap && (
         <button onClick={() => { setMoNhap(true); setTin(null) }}>+ Nhập hàng</button>
       )}
       {moNhap && <FormNhap sanPham={sanPham} ncc={ncc} ton={ton} xong={xong} huy={() => setMoNhap(false)} />}

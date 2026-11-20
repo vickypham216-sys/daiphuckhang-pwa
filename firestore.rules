@@ -195,5 +195,21 @@ service cloud.firestore {
       allow read: if vaiTro() in ['Admin', 'KeToan'];
       allow write: if false;
     }
+
+    // ── XUẤT KHO ────────────────────────────────────────────────────────
+    // Máy chủ ghi (xuatKho, huyXuatKho, nhanHang). Tài xế/phụ xe đọc được
+    // phiếu xuất và hàng trên xe.
+    match /PhieuXuat/{id} {
+      allow read: if laNhanVien();
+      allow write: if false;
+    }
+    match /PhieuXuatHuy/{id} {
+      allow read: if vaiTro() in ['Admin', 'ThuKho', 'KeToan'];
+      allow write: if false;
+    }
+    match /TrenXe/{id} {
+      allow read: if laNhanVien();
+      allow write: if false;
+    }
   }
 }

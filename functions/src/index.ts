@@ -15,6 +15,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import { kiemTraNhanVienMoi, MAT_KHAU_TOI_THIEU } from "./nhanVienLogic";
 import { docDongNhap, maNoVo, tinhNhap, tongTienNhap, type Ton } from "./khoLogic";
+import { congLenXe, docDongXuat, tinhXuat, tongTheoSanPham, type DongXuat } from "./xuatLogic";
 
 initializeApp();
 setGlobalOptions({ region: "asia-southeast1", maxInstances: 5 });
@@ -207,6 +208,123 @@ export const datTonKho = onCall(async (req) => {
       Truoc: { Day: cu?.Day ?? 0, VoRong: cu?.VoRong ?? 0 }, Sau: { Day: day, VoRong: voRong },
       LyDo: lyDo, Boi: nguoi.uid, TenNguoi: nguoi.HoTen, Luc: FieldValue.serverTimestamp(),
     });
+  });
+  return { ok: true };
+});
+
+// ── XUẤT KHO THEO CHUYẾN ─────────────────────────────────────────────────
+// PhieuXuat/{chuyenId}: MỘT phiếu cho mỗi chuyến (id = mã chuyến → không thể
+// xuất hai lần). TrenXe/{xeId}.Hang = hàng đầy đang trên xe theo sản phẩm.
+// Chuyến: LapKeHoach → (xuatKho) DaXuatKho → (nhanHang, tài xế) DangGiao.
+
+export const xuatKho = onCall(async (req) => {
+  const nguoi = await batBuocVaiTro(req, ["Admin", "ThuKho"]);
+  const chuyenId = req.data?.ChuyenId;
+  if (typeof chuyenId !== "string" || !chuyenId) throw new HttpsError("invalid-argument", "Thiếu chuyến.");
+  const vao = docDongXuat(req.data?.Dong);
+  if (typeof vao === "string") throw new HttpsError("invalid-argument", vao);
+  const ghiChu = typeof req.data?.GhiChu === "string" ? req.data.GhiChu.trim().slice(0, 300) : "";
+
+  await db().runTransaction(async (tx) => {
+    const refC = db().collection("Chuyen").doc(chuyenId);
+    const refP = db().collection("PhieuXuat").doc(chuyenId);
+    const [c, p] = await Promise.all([tx.get(refC), tx.get(refP)]);
+    if (!c.exists) throw new HttpsError("not-found", "Không tìm thấy chuyến.");
+    const cd = c.data()!;
+    if (cd.TrangThai !== "LapKeHoach" || p.exists) throw new HttpsError("failed-precondition", "Chuyến này đã xuất kho rồi (hoặc đã huỷ).");
+
+    const donIds: string[] = cd.DonIds ?? [];
+    const don = await Promise.all(donIds.map((id) => tx.get(db().collection("DonHang").doc(id))));
+    const theoDon = tongTheoSanPham(don.map((d) => d.data() as { TrangThai: string; Dong: { SanPhamId: string; SoLuong: number }[] }));
+    const sp = await Promise.all(vao.map((d) => tx.get(db().collection("SanPham").doc(d.SanPhamId))));
+    const dong: DongXuat[] = vao.map((d, i) => {
+      if (!sp[i].exists) throw new HttpsError("not-found", "Có sản phẩm không còn trong danh mục.");
+      const x = sp[i].data()!;
+      return { SanPhamId: d.SanPhamId, Ten: String(x.Ten ?? ""), DonVi: String(x.DonVi ?? ""), CoVo: x.CoVo === true, SoLuong: d.SoLuong, TheoDon: theoDon[d.SanPhamId] ?? 0 };
+    });
+    // Xuất thiếu so với đơn: chặn — tài xế sẽ không đủ hàng giao.
+    for (const [spId, can] of Object.entries(theoDon)) {
+      const co = dong.find((d) => d.SanPhamId === spId)?.SoLuong ?? 0;
+      if (co < can) {
+        const ten = dong.find((d) => d.SanPhamId === spId)?.Ten ?? (await tx.get(db().collection("SanPham").doc(spId))).data()?.Ten ?? spId;
+        throw new HttpsError("failed-precondition", `${ten}: đơn của chuyến cần ${can}, phiếu chỉ xuất ${co}. Bỏ bớt đơn ở màn Điều phối nếu kho không đủ.`);
+      }
+    }
+
+    const refTon = dong.map((d) => db().collection("TonKho").doc(d.SanPhamId));
+    const refXe = db().collection("TrenXe").doc(String(cd.XeId));
+    const [snapTon, xe] = await Promise.all([Promise.all(refTon.map((r) => tx.get(r))), tx.get(refXe)]);
+    const tonDay: Record<string, number> = {};
+    dong.forEach((d, i) => (tonDay[d.SanPhamId] = snapTon[i].data()?.Day ?? 0));
+    const tonMoi = tinhXuat(dong, tonDay);
+    if (typeof tonMoi === "string") throw new HttpsError("failed-precondition", tonMoi);
+
+    dong.forEach((d, i) => tx.set(refTon[i], { Day: tonMoi[d.SanPhamId], CapNhat: FieldValue.serverTimestamp() }, { merge: true }));
+    tx.set(refXe, {
+      XeId: cd.XeId, BienSo: cd.BienSo,
+      Hang: congLenXe(xe.data()?.Hang ?? {}, dong),
+      TenSanPham: { ...(xe.data()?.TenSanPham ?? {}), ...Object.fromEntries(dong.map((d) => [d.SanPhamId, d.Ten])) },
+      CapNhat: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    tx.set(refP, {
+      ChuyenId: chuyenId, Ngay: cd.Ngay, XeId: cd.XeId, BienSo: cd.BienSo, SoChuyen: cd.SoChuyen,
+      TaiXe: cd.TaiXe, PhuXe: cd.PhuXe ?? [], Dong: dong, GhiChu: ghiChu || null,
+      TrangThai: "ChoNhan", TaoBoi: nguoi.uid, TenNguoiTao: nguoi.HoTen, TaoLuc: FieldValue.serverTimestamp(),
+    });
+    tx.update(refC, { TrangThai: "DaXuatKho", SuaLuc: FieldValue.serverTimestamp(), SuaBoi: nguoi.uid });
+  });
+  return { ok: true };
+});
+
+/**
+ * Huỷ phiếu xuất khi thủ kho đếm sai — CHỈ khi tài xế CHƯA bấm nhận. Trả hàng
+ * về kho, mở khoá chuyến cho điều phối. Phiếu không xoá mất: chép sang
+ * PhieuXuatHuy để còn vết.
+ */
+export const huyXuatKho = onCall(async (req) => {
+  const nguoi = await batBuocVaiTro(req, ["Admin", "ThuKho"]);
+  const chuyenId = req.data?.ChuyenId;
+  const lyDo = typeof req.data?.LyDo === "string" ? req.data.LyDo.trim().slice(0, 300) : "";
+  if (typeof chuyenId !== "string" || !chuyenId) throw new HttpsError("invalid-argument", "Thiếu chuyến.");
+  if (!lyDo) throw new HttpsError("invalid-argument", "Cần ghi lý do huỷ.");
+  await db().runTransaction(async (tx) => {
+    const refC = db().collection("Chuyen").doc(chuyenId);
+    const refP = db().collection("PhieuXuat").doc(chuyenId);
+    const [c, p] = await Promise.all([tx.get(refC), tx.get(refP)]);
+    if (!p.exists) throw new HttpsError("not-found", "Chuyến này chưa có phiếu xuất.");
+    if (p.data()!.TrangThai !== "ChoNhan" || c.data()?.TrangThai !== "DaXuatKho")
+      throw new HttpsError("failed-precondition", "Tài xế đã nhận hàng — không huỷ phiếu xuất được nữa.");
+    const dong = p.data()!.Dong as DongXuat[];
+    const refTon = dong.map((d) => db().collection("TonKho").doc(d.SanPhamId));
+    const refXe = db().collection("TrenXe").doc(String(c.data()!.XeId));
+    const [snapTon, xe] = await Promise.all([Promise.all(refTon.map((r) => tx.get(r))), tx.get(refXe)]);
+    dong.forEach((d, i) => tx.set(refTon[i], { Day: (snapTon[i].data()?.Day ?? 0) + d.SoLuong, CapNhat: FieldValue.serverTimestamp() }, { merge: true }));
+    tx.set(refXe, { Hang: congLenXe(xe.data()?.Hang ?? {}, dong, -1), CapNhat: FieldValue.serverTimestamp() }, { merge: true });
+    tx.set(db().collection("PhieuXuatHuy").doc(), { ...p.data(), LyDoHuy: lyDo, HuyBoi: nguoi.uid, TenNguoiHuy: nguoi.HoTen, HuyLuc: FieldValue.serverTimestamp() });
+    tx.delete(refP);
+    tx.update(refC, { TrangThai: "LapKeHoach", SuaLuc: FieldValue.serverTimestamp(), SuaBoi: nguoi.uid });
+  });
+  return { ok: true };
+});
+
+/** Tài xế của chuyến bấm "Đã nhận đủ hàng". Admin bấm thay được (ghi rõ ai bấm). */
+export const nhanHang = onCall(async (req) => {
+  const uid = req.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Chưa đăng nhập.");
+  const chuyenId = req.data?.ChuyenId;
+  if (typeof chuyenId !== "string" || !chuyenId) throw new HttpsError("invalid-argument", "Thiếu chuyến.");
+  const hs = (await db().collection("NguoiDung").doc(uid).get()).data();
+  if (!hs || hs.TrangThai === "Inactive") throw new HttpsError("permission-denied", "Tài khoản không hoạt động.");
+  await db().runTransaction(async (tx) => {
+    const refC = db().collection("Chuyen").doc(chuyenId);
+    const refP = db().collection("PhieuXuat").doc(chuyenId);
+    const [c, p] = await Promise.all([tx.get(refC), tx.get(refP)]);
+    if (!c.exists || !p.exists) throw new HttpsError("not-found", "Chuyến chưa xuất kho.");
+    if (c.data()!.TaiXe?.uid !== uid && hs.VaiTro !== "Admin")
+      throw new HttpsError("permission-denied", "Chỉ tài xế của chuyến này mới xác nhận nhận hàng được.");
+    if (p.data()!.TrangThai !== "ChoNhan") throw new HttpsError("failed-precondition", "Chuyến này đã xác nhận nhận hàng rồi.");
+    tx.update(refP, { TrangThai: "DaNhan", NhanBoi: uid, TenNguoiNhan: String(hs.HoTen ?? ""), NhanLuc: FieldValue.serverTimestamp() });
+    tx.update(refC, { TrangThai: "DangGiao", SuaLuc: FieldValue.serverTimestamp(), SuaBoi: uid });
   });
   return { ok: true };
 });
