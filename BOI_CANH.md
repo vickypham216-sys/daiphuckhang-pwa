@@ -367,3 +367,30 @@ ghi.** App gửi phiếu; Cloud Function kiểm tra và cộng/trừ trong trans
   phiếu nhập, không gọi nhapHang.
 - Chưa có: công nợ TIỀN với NCC (trả tiền nhập hàng), trả vỏ NCC riêng lẻ
   (không kèm nhập) — làm khi cần.
+
+### Bước 2: Xuất kho + tài xế nhận hàng (20/11/2026)
+
+Vicky: *"Có, tài xế bấm đã nhận đủ hàng"*.
+
+- **Kho → Xuất kho** (Admin, Thủ kho): danh sách chuyến trong ngày. "Lập phiếu
+  xuất" tự điền = tổng đơn của chuyến; sửa lên để mang **hàng dư** (app ghi
+  "dư N để bán thêm"). **Chặn xuất ít hơn tổng đơn** (thiếu thì bỏ bớt đơn ở
+  Điều phối) và chặn xuất quá tồn kho.
+- Hàm `xuatKho`: `PhieuXuat/{chuyenId}` (id = mã chuyến → không xuất 2 lần),
+  tồn kho −, `TrenXe/{xeId}.Hang` + (hàng đầy trên xe, theo XE, cộng dồn qua
+  chuyến), chuyến → `DaXuatKho` (điều phối bị khoá). Lấy tên/CoVo từ danh mục
+  và tổng đơn từ DonHang trên máy chủ, không tin số app gửi.
+- Hàm `huyXuatKho` (đếm sai): chỉ khi tài xế CHƯA nhận; trả hàng về kho, trừ
+  khỏi xe, chuyến về `LapKeHoach`; phiếu chép sang `PhieuXuatHuy` kèm lý do.
+- Hàm `nhanHang`: **chỉ tài xế của chuyến** (hoặc Admin) — phụ xe không bấm
+  được. Phiếu → `DaNhan` (ai, lúc nào); chuyến → `DangGiao`. Hộp xác nhận liệt
+  kê lại số hàng, nhắc đếm lại.
+- Tab **Chuyến của tôi** (Tài xế, Phụ xe — mở app là vào thẳng tab này): chuyến
+  trong ngày có mình, hàng xuất kho, nút "Đã nhận đủ hàng", thứ tự giao (địa
+  chỉ, bấm số gọi điện, ghi chú).
+- `src/lib/nghe.ts`: hook nghe Firestore dùng chung (`useNghe`, `useNgheMot`).
+- Đã thử trên giả lập: tự điền 18; xuất 15 bị chặn; xuất quá tồn bị chặn; xuất
+  25+3 → tồn 75/7; huỷ → tồn về 100/10; xuất lại 20; phụ xe không có nút và
+  máy chủ cũng từ chối; tài xế khác không thấy chuyến; tài xế nhận → Đang giao;
+  kho thấy đã nhận, hết nút huỷ; xuất lần 2 / huỷ sau nhận / tài xế gọi
+  xuatKho đều bị máy chủ từ chối.
