@@ -313,3 +313,17 @@ từng đơn (khuyến mãi, làm tròn).
   đã gán. Luật: Sales không tạo chuyến; gán đơn mà chuyến không chứa đơn đó,
   sửa đơn đã gán, huỷ chuyến còn đơn, đổi xe, tự đặt "Đã xuất kho", sửa sau
   xuất kho, bỏ đơn khỏi chuyến đã xuất kho đều bị chặn.
+
+### Kho, giao hàng, tiền, vỏ — trả lời của Vicky (20/11/2026)
+
+*"mua từ nhà cung cấp, có trường hợp cho xe mang thêm hàng dư để bán cho khách
+gọi dọc đường, cho tài xế tạo đơn tại chỗ, có khách ghi nợ trả sau, Khách chưa
+trả vỏ thì ghi nợ vỏ hay thu tiền cọc"*
+
+- Hàng **mua từ nhà cung cấp** → cần phiếu nhập hàng (+ tồn kho).
+- Xuất kho có thể **nhiều hơn tổng đơn** (hàng dư để bán dọc đường) → phiếu
+  xuất ghi số THỰC xuất, không mặc định bằng tổng đơn.
+- **Tài xế tạo đơn tại chỗ** (khách gọi dọc đường) → lấy từ hàng dư trên xe.
+- **Có khách ghi nợ** → cần sổ công nợ tiền theo khách.
+- Vỏ: câu trả lời lặp lại câu hỏi — Claude hiểu là **tuỳ khách: hoặc ghi nợ
+  vỏ, hoặc thu tiền cọc**, chọn trên từng lần giao. CHỜ Vicky xác nhận.
