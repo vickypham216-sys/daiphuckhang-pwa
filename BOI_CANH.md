@@ -204,3 +204,14 @@ nâng cấp gói blaze với budget limited."*
 - `github-deploy` giờ có 10 vai trò (5 cũ + Cloud Functions Admin, Cloud Run
   Admin, Service Account User, Artifact Registry Administrator, Service Usage
   Admin).
+
+### Báo có bản mới (20/11/2026)
+
+Vicky merge màn Nhân viên, deploy ✅, mở app vẫn thấy bản cũ. Nguyên nhân:
+`registerType: 'prompt'` mà không có code hỏi → bản mới nằm chờ mãi (MIA đã
+dính lỗi này, quên chép sang). Thêm `src/BanMoi.tsx`: thanh vàng "Có bản app
+mới · Cập nhật", và tự hỏi máy chủ mỗi 30 phút. Đã thử: build bản A, mở,
+build bản B, tải lại → hiện thanh → bấm Cập nhật → ra bản B.
+
+Máy đang giữ bản CŨ (chưa có BanMoi) phải tự thoát một lần: đóng HẾT tab/app
+rồi mở lại, hoặc Ctrl+Shift+R. Từ bản này trở đi không cần nữa.
