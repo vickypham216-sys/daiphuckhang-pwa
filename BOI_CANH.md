@@ -150,3 +150,48 @@ nâng cấp gói blaze với budget limited."*
 - Cấu hình web lấy từ `.env` có commit, không phải dò như MIA.
 - Chưa deploy Cloud Functions. Khi có function, thêm bước + vai trò cho
   `github-deploy` (danh sách ở DEPLOY_DIEN_THOAI.md của MIA).
+
+### Nhánh `main` (20/11/2026)
+
+- `main` là nhánh mặc định, tạo từ nhánh làm việc đầu tiên. GitHub tự deploy
+  khi merge vào `main`. Claude làm trên nhánh riêng, mở PR, Vicky duyệt.
+
+### Deploy đầu tiên chạy được (20/11/2026)
+
+- Lượt Actions #1 (bấm tay) ✅: build → luật + chỉ mục → hosting, tất cả xanh.
+  Luật trên Console giờ là bản trong repo (có DieuPhoi, KeToan).
+- App: <https://daiphuckhang.web.app>.
+- Tài khoản máy `github-deploy` có 5 vai trò: Firebase Hosting Admin,
+  Firebase Rules Admin, Cloud Datastore Index Admin, Firebase Viewer, Service
+  Usage Consumer. Chưa có quyền Cloud Functions.
+- Container Claude KHÔNG mở được daiphuckhang.web.app (proxy chặn) — muốn
+  kiểm tra app thật thì nhờ Vicky.
+
+### Màn Nhân viên + máy chủ (20/11/2026)
+
+- **Đăng nhập bằng số điện thoại HOẶC email.** Tài xế, phụ xe phần lớn không
+  dùng email. SĐT được đổi thành email nội bộ `<số>@daiphuckhang.web.app`
+  (tên miền của chính app, không ai đăng ký được, không có hộp thư).
+  Logic nằm DUY NHẤT ở `functions/src/nhanVienLogic.ts`; app import thẳng file
+  đó (màn đăng nhập + màn Nhân viên) để hai bên không lệch.
+- **Quên mật khẩu:** email thật → Firebase gửi mail (tiếng Việt). SĐT → báo
+  "nhờ Admin đặt lại".
+- Cloud Functions (`asia-southeast1`, callable): `taoNhanVien`,
+  `datLaiMatKhau`, `doiTrangThaiNhanVien`. Đều chặn chỉ Admin.
+  Ngưng tài khoản đi qua HÀM (khoá Auth + đăng xuất mọi máy + ghi TrangThai),
+  không dùng trigger Firestore như MIA — trigger cần Eventarc, project mới
+  hay vướng quyền.
+- Luật `NguoiDung`: không ai tạo/xoá từ app (chỉ hàm); Admin chỉ sửa HoTen,
+  VaiTro, SoDienThoai; **Admin không tự đổi vai trò mình** và không tự ngưng
+  mình (lỡ tay là mất Admin).
+- Mật khẩu tối thiểu 8 ký tự (MIA 10) — nhân viên gõ trên điện thoại.
+- Đã thử trên Firebase giả lập (emulator): tạo tài xế bằng SĐT, tạo trùng
+  báo lỗi, sửa tên, Admin không đổi được vai trò mình, tài xế đăng nhập bằng
+  "+84 901 234 567", không thấy tab Nhân viên, quên mật khẩu SĐT, đặt mật khẩu
+  mới, ngưng → tài xế bị chặn. Luật: Sales không tự nâng Admin, không đọc hồ
+  sơ người khác; Admin không tạo hồ sơ tay, không sửa TrangThai thẳng; Sales
+  gọi taoNhanVien bị từ chối.
+- Chạy giả lập: `.env.local` với `VITE_USE_EMULATOR=true` và
+  `VITE_FIREBASE_PROJECT_ID=demo-dpk`, rồi
+  `npx firebase emulators:start --project demo-dpk` + `npx vite`.
+- `github-deploy` cần thêm 5 vai trò (DEPLOY_DIEN_THOAI.md).

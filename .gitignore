@@ -38,3 +38,6 @@ service-account.json
 
 # Bo dem deploy cua Firebase CLI - rieng tung may, tu sinh lai
 .firebase/
+
+# Ban build cua Cloud Functions
+functions/lib/

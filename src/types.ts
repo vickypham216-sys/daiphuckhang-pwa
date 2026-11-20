@@ -18,4 +18,7 @@ export interface NguoiDung {
   VaiTro: VaiTro
   /** Thiếu trường này = đang dùng. */
   TrangThai?: 'Active' | 'Inactive'
+  /** Email dùng để đăng nhập (SĐT thì là email nội bộ). Hồ sơ tạo tay có thể thiếu. */
+  DangNhap?: string
+  SoDienThoai?: string
 }

@@ -7,8 +7,8 @@ GitHub tự build và đưa app lên <https://daiphuckhang.web.app> (file
 - **Bấm tay**: GitHub → repo `daiphuckhang-pwa` → tab **Actions** → **Deploy
   app** → **Run workflow**.
 
-Mỗi lần chạy deploy **luật bảo mật Firestore** và **giao diện app**. Vicky
-không phải dán luật vào Console nữa.
+Mỗi lần chạy deploy **luật bảo mật Firestore**, **máy chủ (Cloud Functions)**
+và **giao diện app**. Vicky không phải dán luật vào Console nữa.
 
 ---
 
@@ -53,6 +53,35 @@ Tab **Actions** → **Deploy app** → **Run workflow**. Chờ 3–5 phút tới
 xanh, rồi mở <https://daiphuckhang.web.app> và đăng nhập.
 
 Ra dấu ❌ đỏ: chụp màn hình bước bị đỏ gửi Claude.
+
+---
+
+## Thêm quyền máy chủ (Cloud Functions) — làm một lần, 20/11/2026
+
+Từ màn Nhân viên, app có máy chủ. `github-deploy` cần thêm quyền:
+
+1. Mở <https://console.cloud.google.com/iam-admin/iam?project=daiphuckhang>.
+2. Tìm dòng `github-deploy@daiphuckhang.iam.gserviceaccount.com` → bấm ✏️.
+3. **Add another role**, thêm lần lượt **năm** vai trò:
+   - `Cloud Functions Admin`
+   - `Cloud Run Admin`
+   - `Service Account User`
+   - `Artifact Registry Administrator`
+   - `Service Usage Admin` (để lần đầu tự bật các dịch vụ Google cần cho máy chủ)
+4. **Save**. Không cần tạo khoá mới.
+
+Đổi lại: lộ khoá thì người khác sửa được cả máy chủ — giữ khoá kỹ; nghi lộ thì
+xoá khoá như mục dưới.
+
+### Nếu bước "Deploy máy chủ" báo lỗi quyền của build service account
+
+Project mới tạo hay gặp lỗi kiểu *"missing permission on the build service
+account"*. Sửa một lần:
+
+1. Mở trang IAM ở trên, tìm dòng **`…-compute@developer.gserviceaccount.com`**
+   (tên "Default compute service account") → ✏️.
+2. Thêm vai trò `Cloud Build Service Account` → **Save**.
+3. Tab Actions → chạy lại.
 
 ---
 

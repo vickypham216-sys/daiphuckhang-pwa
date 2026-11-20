@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   getAuth,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
@@ -26,10 +27,15 @@ setPersistence(auth, browserLocalPersistence).catch((e) =>
   console.error('Không đặt được chế độ ghi nhớ đăng nhập', e),
 )
 
+/** `email` đã đổi qua emailDangNhap() — SĐT thành email nội bộ. */
 export const dangNhap = (email: string, matKhau: string) =>
-  signInWithEmailAndPassword(auth, email.trim(), matKhau).then(() => undefined)
+  signInWithEmailAndPassword(auth, email, matKhau).then(() => undefined)
 
 export const dangXuat = () => signOut(auth)
+
+// Email đặt lại mật khẩu gửi bằng tiếng Việt.
+auth.languageCode = 'vi'
+export const guiEmailDatLaiMatKhau = (email: string) => sendPasswordResetEmail(auth, email)
 
 export interface PhienDangNhap {
   dangTai: boolean
