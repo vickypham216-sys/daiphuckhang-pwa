@@ -195,3 +195,12 @@ nâng cấp gói blaze với budget limited."*
   `VITE_FIREBASE_PROJECT_ID=demo-dpk`, rồi
   `npx firebase emulators:start --project demo-dpk` + `npx vite`.
 - `github-deploy` cần thêm 5 vai trò (DEPLOY_DIEN_THOAI.md).
+
+### Deploy máy chủ lần đầu (20/11/2026)
+
+- PR #1 merge → Actions #2 ✅. 3 hàm tạo xong ở `asia-southeast1`. Firebase tự
+  bật run, eventarc, extensions API và tự đặt chính sách xoá image cũ hơn 1
+  ngày (đỡ tiền lưu trữ). Không cần thêm quyền build service account.
+- `github-deploy` giờ có 10 vai trò (5 cũ + Cloud Functions Admin, Cloud Run
+  Admin, Service Account User, Artifact Registry Administrator, Service Usage
+  Admin).
