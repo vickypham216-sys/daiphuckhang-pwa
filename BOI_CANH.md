@@ -215,3 +215,13 @@ build bản B, tải lại → hiện thanh → bấm Cập nhật → ra bản 
 
 Máy đang giữ bản CŨ (chưa có BanMoi) phải tự thoát một lần: đóng HẾT tab/app
 rồi mở lại, hoặc Ctrl+Shift+R. Từ bản này trở đi không cần nữa.
+
+### Claude tự merge PR (20/11/2026)
+
+Vicky: *"Next time bạn tự merge đi"*. Từ nay Claude tự merge PR vào `main` sau
+khi build + test xanh, rồi theo dõi Actions tới ✅ và báo Vicky kết quả.
+
+Vẫn HỎI Vicky trước khi merge khi:
+- cần Vicky làm gì trên Google Cloud / Firebase trước (thêm quyền, bật dịch vụ);
+- thay đổi xoá / chuyển đổi dữ liệu đã có, hoặc nới luật bảo mật;
+- thay đổi quy tắc nghiệp vụ Vicky chưa chốt.
