@@ -101,3 +101,6 @@ button:disabled { opacity: 0.6; }
 .nhan-ngung { font-size: 0.8rem; color: var(--loi); white-space: nowrap; }
 .o-tick { display: flex; align-items: center; gap: 8px; font-weight: 400; }
 .o-tick input { width: 20px; height: 20px; }
+
+.ban-moi { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: #fef0c7; color: #7a2e0e; font-weight: 500; }
+.ban-moi button { min-height: 36px; padding: 6px 14px; }
