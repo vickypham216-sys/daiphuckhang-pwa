@@ -76,3 +76,18 @@ export const KHACH_HANG: CauHinhDanhMuc = {
     return null
   },
 }
+
+export const NHA_CUNG_CAP: CauHinhDanhMuc = {
+  boSuuTap: 'NhaCungCap',
+  tenMot: 'nhà cung cấp',
+  truong: [
+    { ma: 'Ten', nhan: 'Tên nhà cung cấp', kieu: 'chu', batBuoc: true },
+    { ma: 'SoDienThoai', nhan: 'Số điện thoại', kieu: 'sdt' },
+    { ma: 'DiaChi', nhan: 'Địa chỉ', kieu: 'dai' },
+    { ma: 'GhiChu', nhan: 'Ghi chú', kieu: 'dai' },
+  ],
+  tieuDe: (d) => String(d.Ten ?? ''),
+  phu: (d) => [d.SoDienThoai, d.DiaChi].filter(Boolean).join(' · ') || '—',
+  kiemTra: (d, tatCa) =>
+    tatCa.some((x) => String(x.Ten ?? '').toLowerCase() === String(d.Ten).toLowerCase()) ? `Đã có nhà cung cấp "${String(d.Ten)}".` : null,
+}

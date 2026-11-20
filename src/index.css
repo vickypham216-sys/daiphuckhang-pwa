@@ -157,3 +157,16 @@ textarea { resize: vertical; }
 .ds-don-chuyen li > span:first-child { display: inline-block; max-width: calc(100% - 132px); vertical-align: top; }
 .nut-dong { float: right; display: flex; gap: 4px; }
 .nut-dong button { min-height: 36px; min-width: 36px; padding: 4px 8px; }
+
+.bang-nhap { display: grid; gap: 6px; }
+.bang-nhap-dau, .bang-nhap-dong { display: grid; grid-template-columns: 1fr 64px 84px 64px; gap: 6px; align-items: center; }
+.bang-nhap-dau { font-size: 0.8rem; color: var(--chu-phu); }
+.bang-nhap-dong small { display: block; color: var(--chu-phu); font-size: 0.78rem; }
+.bang-nhap-dong input { padding: 10px 6px; text-align: right; min-width: 0; }
+.bang-ton { width: 100%; border-collapse: collapse; }
+.bang-ton th { text-align: left; font-size: 0.85rem; color: var(--chu-phu); font-weight: 500; padding: 6px 4px; border-bottom: 1px solid var(--vien); }
+.bang-ton td { padding: 10px 4px; border-bottom: 1px solid var(--vien); }
+.bang-ton th:not(:first-child), .bang-ton td:not(:first-child) { text-align: right; }
+.bang-ton td[colspan] { text-align: left; background: var(--nen); }
+.bam-duoc { cursor: pointer; }
+.bam-duoc:hover { background: var(--nen); }

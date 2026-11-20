@@ -313,3 +313,57 @@ từng đơn (khuyến mãi, làm tròn).
   đã gán. Luật: Sales không tạo chuyến; gán đơn mà chuyến không chứa đơn đó,
   sửa đơn đã gán, huỷ chuyến còn đơn, đổi xe, tự đặt "Đã xuất kho", sửa sau
   xuất kho, bỏ đơn khỏi chuyến đã xuất kho đều bị chặn.
+
+### Kho, giao hàng, tiền, vỏ — trả lời của Vicky (20/11/2026)
+
+*"mua từ nhà cung cấp, có trường hợp cho xe mang thêm hàng dư để bán cho khách
+gọi dọc đường, cho tài xế tạo đơn tại chỗ, có khách ghi nợ trả sau, Khách chưa
+trả vỏ thì ghi nợ vỏ hay thu tiền cọc"*
+
+- Hàng **mua từ nhà cung cấp** → cần phiếu nhập hàng (+ tồn kho).
+- Xuất kho có thể **nhiều hơn tổng đơn** (hàng dư để bán dọc đường) → phiếu
+  xuất ghi số THỰC xuất, không mặc định bằng tổng đơn.
+- **Tài xế tạo đơn tại chỗ** (khách gọi dọc đường) → lấy từ hàng dư trên xe.
+- **Có khách ghi nợ** → cần sổ công nợ tiền theo khách.
+- Vỏ: câu trả lời lặp lại câu hỏi — Claude hiểu là **tuỳ khách: hoặc ghi nợ
+  vỏ, hoặc thu tiền cọc**, chọn trên từng lần giao. CHỜ Vicky xác nhận.
+- 20/11 Vicky xác nhận: **vỏ thiếu → tuỳ khách, chọn mỗi lần giao** (nợ vỏ
+  HOẶC thu cọc). **NCC đổi vỏ 1-1**: giao N bình đầy, lấy lại vỏ rỗng — app
+  theo dõi vỏ rỗng trong kho và vỏ công ty đang nợ NCC. **Thu tiền: tiền mặt
+  cho tài xế, chuyển khoản, ghi nợ trả sau.**
+
+### Kế hoạch phần kho → giao → đối soát (Claude đề xuất 20/11)
+
+Nguyên tắc như MIA: **tồn kho, vỏ, công nợ là số tài chính — chỉ máy chủ
+ghi.** App gửi phiếu; Cloud Function kiểm tra và cộng/trừ trong transaction.
+
+1. **Kho + Nhập hàng** — danh mục NCC; tồn đầu kỳ; phiếu nhập (đầy +, vỏ rỗng
+   trả NCC −, nợ vỏ NCC ±). Thủ kho có mạng → hàm gọi trực tiếp (callable).
+2. **Xuất kho theo chuyến** — số thực xuất (có thể > tổng đơn); tồn kho −,
+   hàng trên xe +; chuyến → DaXuatKho (khoá điều phối).
+3. **Giao hàng (tài xế, phải chạy KHI MẤT SÓNG)** — phiếu giao từng khách: số
+   giao, vỏ thu, nợ vỏ/cọc, tiền mặt/CK/nợ; đơn tại chỗ từ hàng dư.
+4. **Kết thúc chuyến** — đếm hàng dư, vỏ, tiền nộp → chênh lệch ghi nhận cho
+   Admin xử lý tay; chọn trả kho hoặc để lại trên xe.
+5. **Công nợ khách** (tiền, vỏ, cọc) + thu nợ.
+
+### Bước 1: Kho + Nhập hàng (20/11/2026)
+
+- Tab **Kho** (Admin, Thủ kho; Kế toán chỉ xem). Ba mục: Tồn kho · Phiếu nhập
+  · Nhà cung cấp (Admin).
+- `TonKho/{sanPhamId}`: `Day` (hàng đầy), `VoRong` (vỏ rỗng, chỉ CoVo).
+  `NoVoNCC/{nccId__spId}.SoVo`: vỏ công ty nợ NCC (âm = NCC nợ lại).
+  `PhieuNhap`, `DieuChinhTon` (vết). **App KHÔNG ghi được** mấy collection này.
+- Hàm `nhapHang` (Admin, Thủ kho): một transaction — kiểm NCC, lấy CoVo từ
+  danh mục (không tin app), chặn trả NCC nhiều vỏ hơn vỏ rỗng đang có, ghi
+  phiếu + tồn + nợ vỏ. Vỏ trả NCC **tự điền = số nhập** (đổi 1-1), sửa được.
+- Hàm `datTonKho` (Admin): đặt tồn đầu kỳ / điều chỉnh sau kiểm kho, **bắt
+  buộc lý do**, ghi `DieuChinhTon` (trước → sau, ai, khi nào).
+- Logic thuần ở `functions/src/khoLogic.ts` + test.
+- `src/lib/goiMayChu.ts`: gọi callable + đổi lỗi thành câu tiếng Việt (dùng chung).
+- Đã thử trên giả lập: tồn đầu kỳ 50 đầy/120 vỏ → nhập 100 đầy, trả 90 vỏ
+  → 150 đầy/30 vỏ, nợ NCC 10 vỏ; trả 150 vỏ bị chặn. Thủ kho không thấy mục
+  NCC, không ghi thẳng TonKho/PhieuNhap, không gọi datTonKho; Sales không đọc
+  phiếu nhập, không gọi nhapHang.
+- Chưa có: công nợ TIỀN với NCC (trả tiền nhập hàng), trả vỏ NCC riêng lẻ
+  (không kèm nhập) — làm khi cần.
