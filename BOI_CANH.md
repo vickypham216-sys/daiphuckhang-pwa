@@ -155,3 +155,14 @@ nâng cấp gói blaze với budget limited."*
 
 - `main` là nhánh mặc định, tạo từ nhánh làm việc đầu tiên. GitHub tự deploy
   khi merge vào `main`. Claude làm trên nhánh riêng, mở PR, Vicky duyệt.
+
+### Deploy đầu tiên chạy được (20/11/2026)
+
+- Lượt Actions #1 (bấm tay) ✅: build → luật + chỉ mục → hosting, tất cả xanh.
+  Luật trên Console giờ là bản trong repo (có DieuPhoi, KeToan).
+- App: <https://daiphuckhang.web.app>.
+- Tài khoản máy `github-deploy` có 5 vai trò: Firebase Hosting Admin,
+  Firebase Rules Admin, Cloud Datastore Index Admin, Firebase Viewer, Service
+  Usage Consumer. Chưa có quyền Cloud Functions.
+- Container Claude KHÔNG mở được daiphuckhang.web.app (proxy chặn) — muốn
+  kiểm tra app thật thì nhờ Vicky.
