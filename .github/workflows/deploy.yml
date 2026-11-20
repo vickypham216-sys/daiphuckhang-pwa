@@ -41,11 +41,10 @@ jobs:
       # Build + test trước — lỗi là DỪNG, không deploy gì cả.
       - run: npm run build
 
-      - name: Kiểm tra máy chủ
-        working-directory: functions
+      - name: Kiểm tra (app + máy chủ)
         run: |
-          npm ci
-          npm test
+          npm --prefix functions ci
+          npm run verify
 
       - name: Khoá service account
         env:

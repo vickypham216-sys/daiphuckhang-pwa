@@ -261,3 +261,23 @@ Vicky chọn:
 - Đã thử trên giả lập: thêm/trùng/ngưng cho cả 3; Sales thêm khách được, tài
   xế không thấy tab. Luật: Sales không tạo Xe/SanPham; tài xế không tạo khách;
   thiếu địa chỉ, giá âm, xoá, chưa đăng nhập đều bị chặn.
+
+### Màn Đơn hàng (20/11/2026)
+
+Vicky: *"Sales nhận đơn, sáng hôm sau điều phối gán xe"*.
+
+- Tab **Đơn hàng** cho Admin, Sales, Điều phối. Mặc định xem đơn **ngày mai**
+  (nút Hôm nay / Ngày mai, chọn ngày bất kỳ). Đầu danh sách có tổng số lượng
+  theo sản phẩm — Điều phối/kho biết cần bao nhiêu hàng.
+- Tạo đơn: tìm khách (không dấu) → bảng TẤT CẢ sản phẩm đang bán, gõ số lượng
+  dòng cần → giá điền sẵn giá mặc định, **sửa được trên từng đơn**.
+- Đơn **chụp lại** tên/địa chỉ/SĐT/ghi chú khách và tên/giá sản phẩm lúc tạo
+  (`DonHang.Dong[]`). Đổi danh mục về sau không làm đổi đơn cũ.
+- Trạng thái: `Moi` (Chờ gán xe) → `DaGan` → `DaGiao`; `Huy` kèm lý do bắt
+  buộc. Chỉ sửa/huỷ khi còn `Moi`. Không xoá.
+- Luật: chỉ Admin/Sales/Điều phối tạo; tạo phải là `Moi`, `ChuyenId` null,
+  `TaoBoi` = mình; không tự gán xe từ màn này (để dành màn Điều phối).
+- `npm run verify` (CI chạy trước deploy): ngày giờ VN, tổng tiền, kiểm tra
+  đơn, biển số, logic nhân viên.
+- **Chưa chốt: giá riêng theo khách** (đại lý vs khách lẻ). Hiện: giá mặc định,
+  Sales sửa tay từng đơn.

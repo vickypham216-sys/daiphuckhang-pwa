@@ -3,6 +3,7 @@ import { dangNhap, dangXuat, guiEmailDatLaiMatKhau, usePhienDangNhap } from './l
 import { DUOI_EMAIL_NOI_BO, emailDangNhap } from '../functions/src/nhanVienLogic'
 import NhanVien from './screens/NhanVien'
 import DanhMuc from './screens/DanhMuc'
+import DonHang from './screens/DonHang'
 import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
@@ -105,7 +106,7 @@ function ThongBao({ tieuDe, noiDung }: { tieuDe: string; noiDung: string }) {
   )
 }
 
-type Man = 'trangchu' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+type Man = 'trangchu' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
 
 export default function App() {
   const phien = usePhienDangNhap()
@@ -130,7 +131,12 @@ export default function App() {
   // người gặp khách mới. Xe, Sản phẩm (giá): chỉ Admin.
   const tab: { ma: Man; ten: string }[] = [
     { ma: 'trangchu', ten: 'Trang chủ' },
-    ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi' ? [{ ma: 'khach' as Man, ten: 'Khách hàng' }] : []),
+    ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi'
+      ? [
+          { ma: 'donhang' as Man, ten: 'Đơn hàng' },
+          { ma: 'khach' as Man, ten: 'Khách hàng' },
+        ]
+      : []),
     ...(laAdmin
       ? [
           { ma: 'sanpham' as Man, ten: 'Sản phẩm' },
@@ -162,7 +168,9 @@ export default function App() {
         </nav>
       )}
       <main className="noi-dung">
-        {manHien === 'nhanvien' ? (
+        {manHien === 'donhang' ? (
+          <DonHang uid={phien.uid} tenToi={phien.hoSo.HoTen} />
+        ) : manHien === 'nhanvien' ? (
           <NhanVien uidToi={phien.uid} emailToi={phien.email} />
         ) : manHien === 'xe' ? (
           <DanhMuc key="xe" ch={XE} uid={phien.uid} duocSua={laAdmin} />
