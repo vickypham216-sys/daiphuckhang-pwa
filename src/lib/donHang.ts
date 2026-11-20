@@ -35,6 +35,8 @@ export interface DonHang {
   GhiChu: string | null
   TrangThai: TrangThaiDon
   ChuyenId: string | null
+  /** Nhãn chuyến khi đã gán, vd "51C-123.45 · C1" — để Sales thấy đơn đi xe nào. */
+  XeGan?: string | null
   TaoBoi: string
   TenNguoiTao: string
   LyDoHuy?: string

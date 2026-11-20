@@ -4,6 +4,7 @@ import { DUOI_EMAIL_NOI_BO, emailDangNhap } from '../functions/src/nhanVienLogic
 import NhanVien from './screens/NhanVien'
 import DanhMuc from './screens/DanhMuc'
 import DonHang from './screens/DonHang'
+import DieuPhoi from './screens/DieuPhoi'
 import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
@@ -106,7 +107,7 @@ function ThongBao({ tieuDe, noiDung }: { tieuDe: string; noiDung: string }) {
   )
 }
 
-type Man = 'trangchu' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+type Man = 'trangchu' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
 
 export default function App() {
   const phien = usePhienDangNhap()
@@ -131,6 +132,7 @@ export default function App() {
   // người gặp khách mới. Xe, Sản phẩm (giá): chỉ Admin.
   const tab: { ma: Man; ten: string }[] = [
     { ma: 'trangchu', ten: 'Trang chủ' },
+    ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối' }] : []),
     ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi'
       ? [
           { ma: 'donhang' as Man, ten: 'Đơn hàng' },
@@ -168,7 +170,9 @@ export default function App() {
         </nav>
       )}
       <main className="noi-dung">
-        {manHien === 'donhang' ? (
+        {manHien === 'dieuphoi' ? (
+          <DieuPhoi uid={phien.uid} />
+        ) : manHien === 'donhang' ? (
           <DonHang uid={phien.uid} tenToi={phien.hoSo.HoTen} />
         ) : manHien === 'nhanvien' ? (
           <NhanVien uidToi={phien.uid} emailToi={phien.email} />

@@ -314,6 +314,7 @@ export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }
                 <span>
                   <strong>{d.TenKhach}</strong>
                   <small>{tomTatDong(d.Dong)}</small>
+                  {d.XeGan && <small>🚚 {d.XeGan}</small>}
                 </span>
                 <span className={'nhan-tt tt-' + d.TrangThai}>{TEN_TRANG_THAI_DON[d.TrangThai]}</span>
               </button>
