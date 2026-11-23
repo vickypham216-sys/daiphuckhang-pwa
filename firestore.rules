@@ -261,11 +261,9 @@ service cloud.firestore {
         && ((request.resource.data.TaiCho == false && request.resource.data.DonId == id
               && get(/databases/$(database)/documents/DonHang/$(id)).data.ChuyenId == request.resource.data.ChuyenId)
             || (request.resource.data.TaiCho == true && request.resource.data.DonId == null));
-      allow update: if vaiTro() in ['Admin', 'KeToan']
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['CK'])
-        && resource.data.CK.TrangThai == 'ChoXacNhan'
-        && request.resource.data.CK.TrangThai in ['DaXacNhan', 'KhongThay']
-        && request.resource.data.CK.Boi == request.auth.uid;
+      // Xác nhận chuyển khoản: qua máy chủ (xacNhanCK) — "Không thấy" phải cộng
+      // lại nợ khách, app không ghi công nợ được.
+      allow update: if false;
       allow delete: if false;
     }
     // Đơn có trong chuyến → "Đã giao" / "Không giao được", CÙNG LÚC với phiếu
@@ -298,8 +296,33 @@ service cloud.firestore {
       allow write: if false;
     }
     match /CongNoKhach/{id} {
-      allow read: if vaiTro() in ['Admin', 'KeToan', 'Sales'];
+      // Tài xế / phụ xe xem để nhắc khách và thu nợ trên đường.
+      allow read: if vaiTro() in ['Admin', 'KeToan', 'Sales', 'TaiXe', 'PhuXe'];
       allow write: if false;
+    }
+
+    // ── THU NỢ ──────────────────────────────────────────────────────────
+    // Tài xế / phụ xe ghi phiếu thu trên chuyến (được khi mất sóng); máy chủ áp
+    // vào công nợ lúc chốt chuyến. Văn phòng thu qua máy chủ (thuNoVanPhong).
+    function soVo(m) {
+      return m is map && m.size() <= 20;
+    }
+    match /PhieuThu/{id} {
+      allow read: if laNhanVien();
+      allow create: if laNhanVien()
+        && request.resource.data.Nguon == 'TaiXe'
+        && request.resource.data.ChuyenId is string
+        && trongToXe(chuyenCua(request.resource.data.ChuyenId))
+        && chuyenCua(request.resource.data.ChuyenId).TrangThai == 'DangGiao'
+        && request.resource.data.TaoBoi == request.auth.uid
+        && request.resource.data.DaGhiSo == false
+        && request.resource.data.KhachHangId is string
+        && exists(/databases/$(database)/documents/KhachHang/$(request.resource.data.KhachHangId))
+        && soTien(request.resource.data.TienMat) && soTien(request.resource.data.ChuyenKhoan) && soTien(request.resource.data.TienHoanCoc)
+        && soVo(request.resource.data.TraVo) && soVo(request.resource.data.HoanCocVo)
+        && ((request.resource.data.ChuyenKhoan == 0 && request.resource.data.CK == null)
+            || (request.resource.data.ChuyenKhoan > 0 && request.resource.data.CK.TrangThai == 'ChoXacNhan'));
+      allow update, delete: if false;
     }
   }
 }

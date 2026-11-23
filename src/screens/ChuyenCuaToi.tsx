@@ -13,6 +13,8 @@ import { dinhDangSo } from '../lib/so'
 import type { TaiKhoanNhan } from '../lib/vietQR'
 import type { BanGhi } from './DanhMuc'
 import FormGiao from './GiaoHang'
+import FormThuNo from './ThuNo'
+import type { PhieuThuSo } from '../../functions/src/thuNoLogic'
 import type { DongGiao, ThanhToan } from '../../functions/src/giaoLogic'
 
 interface PhieuGiao {
@@ -39,6 +41,19 @@ function usePhieuGiao(chuyenId: string, bat: boolean) {
   return ds
 }
 
+interface PhieuThu extends PhieuThuSo { TenKhach: string; chuaGui: boolean }
+
+function usePhieuThu(chuyenId: string, bat: boolean) {
+  const [ds, setDs] = useState<CoId<PhieuThu>[]>([])
+  useEffect(() => {
+    if (!bat) return setDs([])
+    return onSnapshot(query(collection(db, 'PhieuThu'), where('ChuyenId', '==', chuyenId)), { includeMetadataChanges: true }, (s) =>
+      setDs(s.docs.map((x) => ({ ...(x.data() as PhieuThu), id: x.id, chuaGui: x.metadata.hasPendingWrites }))),
+    )
+  }, [chuyenId, bat])
+  return ds
+}
+
 interface ChungProps { uid: string; tenToi: string; sanPham: CoId<BanGhi>[]; khach: CoId<BanGhi>[]; tk: TaiKhoanNhan | null | undefined }
 
 function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoId<DonHang>> } & ChungProps) {
@@ -49,7 +64,8 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
   const [ban, setBan] = useState(false)
   const [loi, setLoi] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)
-  const [moGiao, setMoGiao] = useState<string | 'taicho' | null>(null)
+  const [moGiao, setMoGiao] = useState<string | 'taicho' | 'thuno' | null>(null)
+  const phieuThu = usePhieuThu(c.id, dangGiao || c.TrangThai === 'VeKho' || c.TrangThai === 'HoanThanh')
   const laTaiXe = c.TaiXe.uid === uid
 
   // Hàng còn trên xe chưa giao = xuất − đã giao (theo phiếu của chuyến này).
@@ -59,7 +75,9 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
   const giaoTheoDon = new Map(phieuGiao.filter((p) => p.DonId).map((p) => [p.DonId!, p]))
   const taiCho = phieuGiao.filter((p) => p.TaiCho)
   const tong = phieuGiao.reduce((t, p) => ({ tm: t.tm + p.TT.TienMat, ck: t.ck + p.TT.ChuyenKhoan, no: t.no + p.TT.GhiNo }), { tm: 0, ck: 0, no: 0 })
-  const soChuaGui = phieuGiao.filter((p) => p.chuaGui).length
+  // Thu nợ: tiền mặt thu (trừ tiền cọc trả lại khách) cũng phải nộp.
+  for (const t of phieuThu) { tong.tm += t.TienMat - t.TienHoanCoc; tong.ck += t.ChuyenKhoan }
+  const soChuaGui = phieuGiao.filter((p) => p.chuaGui).length + phieuThu.filter((p) => p.chuaGui).length
   const xongGiao = (t: string) => { setTin(t); setMoGiao(null) }
   const conDonChuaGiao = c.DonIds.filter((id) => !giaoTheoDon.has(id)).length
 
@@ -118,7 +136,7 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
       {loi && <p className="loi" role="alert">{loi}</p>}
 
       {tin && <p className="tin-tot" role="status">{tin}</p>}
-      {soChuaGui > 0 && <p className="canh-bao">⏳ {soChuaGui} phiếu giao đang lưu trên máy, sẽ tự gửi khi có sóng. Đừng xoá app / dữ liệu trình duyệt.</p>}
+      {soChuaGui > 0 && <p className="canh-bao">⏳ {soChuaGui} phiếu (giao / thu nợ) đang lưu trên máy, sẽ tự gửi khi có sóng. Đừng xoá app / dữ liệu trình duyệt.</p>}
       {phieuGiao.length > 0 && (
         <p className="ghi-chu">
           Đã thu: tiền mặt <strong>{dinhDangSo(tong.tm)}đ</strong> · CK {dinhDangSo(tong.ck)}đ · ghi nợ {dinhDangSo(tong.no)}đ
@@ -166,9 +184,21 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
             .map(([id, n]) => `${String(chung.sanPham.find((x) => x.id === id)?.Ten ?? phieu.Dong.find((d) => d.SanPhamId === id)?.Ten ?? id)}: ${n}`).join(' · ') || 'hết'}
         </p>
       )}
-      {dangGiao && moGiao !== 'taicho' && (
-        <button className="nut-vien" onClick={() => { setMoGiao('taicho'); setTin(null) }}>+ Đơn tại chỗ (bán hàng dư)</button>
+      {(phieuThu.length > 0 || dangGiao) && <h3>Thu nợ ({phieuThu.length})</h3>}
+      {phieuThu.map((t) => (
+        <p key={t.id} className="ghi-chu">
+          ✔ {t.TenKhach}: {[t.TienMat + t.ChuyenKhoan > 0 && `${dinhDangSo(t.TienMat + t.ChuyenKhoan)}đ`,
+            Object.values(t.TraVo).reduce((a, b) => a + b, 0) > 0 && `${Object.values(t.TraVo).reduce((a, b) => a + b, 0)} vỏ`,
+            t.TienHoanCoc > 0 && `hoàn cọc ${dinhDangSo(t.TienHoanCoc)}đ`].filter(Boolean).join(', ')}{t.chuaGui && ' · ⏳ chưa gửi'}
+        </p>
+      ))}
+      {dangGiao && !moGiao && (
+        <div className="hang-nut">
+          <button className="nut-vien" onClick={() => { setMoGiao('taicho'); setTin(null) }}>+ Đơn tại chỗ</button>
+          <button className="nut-vien" onClick={() => { setMoGiao('thuno'); setTin(null) }}>+ Thu nợ</button>
+        </div>
       )}
+      {moGiao === 'thuno' && <FormThuNo c={c} xong={xongGiao} huy={() => setMoGiao(null)} {...chung} />}
       {moGiao === 'taicho' && <FormGiao c={c} conTrenXe={conTrenXe} xong={xongGiao} huy={() => setMoGiao(null)} {...chung} />}
 
       {dangGiao && !moGiao && (

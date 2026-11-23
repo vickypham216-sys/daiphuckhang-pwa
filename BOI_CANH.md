@@ -495,3 +495,31 @@ Vicky: *"Làm nhập công nợ đầu kỳ trước"* (trước thu nợ, để
 - Đã thử: khách có sẵn (nợ phát sinh 200k + 1 vỏ) + đầu kỳ 1tr/5 vỏ → 1,2tr/6;
   nhập lại 800k/4 vỏ → 1tr/5 (đúng, không cộng dồn); khách mới được tạo kèm
   cọc 2 vỏ / 100k; SĐT sai báo lỗi dòng.
+
+### Thu nợ khách (23/11/2026)
+
+Vicky: *"Làm thu nợ khách tiếp đi"*.
+
+- `PhieuThu`: TienMat, ChuyenKhoan, TraVo {sp: n} (vỏ trả nợ), HoanCocVo
+  {sp: n} + TienHoanCoc (công ty trả lại tiền cọc), KhachHangId (bắt buộc —
+  khách lẻ không có nợ), Nguon `TaiXe` | `VanPhong`, DaGhiSo.
+- **Tài xế** (Chuyến của tôi → **+ Thu nợ**): thấy nợ hiện tại của khách (số
+  trên máy chủ, chưa tính chuyến đang chạy), nhập tiền mặt / CK (QR) / vỏ / trả
+  vỏ cọc (hoàn = số vỏ × giá cọc hiện hành, không vượt tiền cọc đang giữ). Ghi
+  bằng writeBatch → **được khi mất sóng**. Tiền mặt thu − hoàn cọc cộng vào số
+  phải nộp; vỏ thu vào số vỏ phải có trên xe; `ketThucChuyen` áp vào công nợ
+  và đánh dấu DaGhiSo.
+- **Văn phòng** (Kế toán → Công nợ → bấm dòng khách, hoặc + Thu nợ): hàm
+  `thuNoVanPhong` (Admin, Kế toán) áp ngay; CK tại văn phòng coi như đã thấy.
+- Chặn thu quá nợ tiền / nợ vỏ / vỏ đang cọc (`thuNoLogic.ts`).
+- **Xác nhận chuyển khoản chuyển sang máy chủ** (`xacNhanCK`, cho cả phiếu giao
+  và phiếu thu): **"Không thấy" → CỘNG LẠI số đó vào nợ khách** (khách lẻ: chỉ
+  đánh dấu). Luật cấm app sửa trường CK của PhieuGiao nữa. Thứ tự "Không thấy"
+  trước hay sau lúc chốt chuyến đều ra cùng kết quả.
+- Tài xế / phụ xe được ĐỌC CongNoKhach (để nhắc khách).
+- Đã thử trên giả lập: khách nợ 500k / 4 vỏ / cọc 2 vỏ 100k → tài xế thu 200k
+  TM + 100k CK + 3 vỏ + hoàn cọc 1 vỏ (50k) lúc MẤT SÓNG → chốt chuyến: tiền
+  phải nộp 400k (250k giao + 200k − 50k), vỏ khớp 14 → nợ còn 200k / 1 vỏ /
+  cọc 1 vỏ 50k → kế toán "Không thấy" CK 100k → nợ 300k → thu văn phòng 300k
+  + 1 vỏ → 0. Luật/hàm: phiếu thu sau chốt, sửa phiếu thu, sửa CK thẳng, tài xế
+  gọi thu văn phòng, thu quá nợ đều bị chặn.
