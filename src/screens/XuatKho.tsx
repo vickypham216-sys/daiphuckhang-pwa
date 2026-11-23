@@ -11,6 +11,7 @@ import { hienNgay, ngayVN, type DonHang } from '../lib/donHang'
 import { TEN_TRANG_THAI_CHUYEN, type Chuyen } from '../lib/dieuPhoi'
 import { gioPhut, type PhieuXuat } from '../lib/xuatKho'
 import type { BanGhi } from './DanhMuc'
+import { FormKetThuc, KetQuaDoiSoat } from './KetThucChuyen'
 
 interface TonKho { Day: number }
 
@@ -72,8 +73,8 @@ function FormXuat({ c, don, sanPham, ton, xong, huy }: {
   )
 }
 
-function TheChuyen({ c, don, sanPham, ton, baoTin }: {
-  c: CoId<Chuyen>; don: CoId<DonHang>[]; sanPham: CoId<BanGhi>[]; ton: Map<string, TonKho>; baoTin: (t: string) => void
+function TheChuyen({ c, don, sanPham, ton, baoTin, chuyenNgay }: {
+  c: CoId<Chuyen>; don: CoId<DonHang>[]; sanPham: CoId<BanGhi>[]; ton: Map<string, TonKho>; baoTin: (t: string) => void; chuyenNgay: CoId<Chuyen>[]
 }) {
   const [mo, setMo] = useState(false)
   const [loi, setLoi] = useState<string | null>(null)
@@ -96,7 +97,7 @@ function TheChuyen({ c, don, sanPham, ton, baoTin }: {
     <section className="the the-rong chuyen">
       <div className="chuyen-dau">
         <h2>{c.BienSo} · Chuyến {c.SoChuyen}</h2>
-        <span className={'nhan-tt ' + (c.TrangThai === 'LapKeHoach' ? 'tt-Moi' : c.TrangThai === 'DaXuatKho' ? 'tt-DaGan' : 'tt-DaGiao')}>
+        <span className={'nhan-tt ' + (c.TrangThai === 'LapKeHoach' || c.TrangThai === 'VeKho' ? 'tt-Moi' : c.TrangThai === 'DaXuatKho' ? 'tt-DaGan' : 'tt-DaGiao')}>
           {c.TrangThai === 'DaXuatKho' ? 'Chờ tài xế nhận' : TEN_TRANG_THAI_CHUYEN[c.TrangThai]}
         </span>
       </div>
@@ -119,12 +120,19 @@ function TheChuyen({ c, don, sanPham, ton, baoTin }: {
           </table>
           <p className="ghi-chu">Thủ kho: {phieu.TenNguoiTao}{phieu.GhiChu && ` · ${phieu.GhiChu}`}</p>
           {phieu.TrangThai === 'DaNhan' ? (
-            <p className="tin-tot">✔ {phieu.TenNguoiNhan} đã nhận đủ hàng lúc {gioPhut(phieu.NhanLuc)}</p>
+            c.TrangThai === 'DangGiao' && <p className="tin-tot">✔ {phieu.TenNguoiNhan} đã nhận đủ hàng lúc {gioPhut(phieu.NhanLuc)}</p>
           ) : (
             <button className="nut-nguy" onClick={huyPhieu}>Huỷ phiếu xuất (đếm sai)</button>
           )}
         </>
       )}
+      {c.TrangThai === 'VeKho' && phieu && (
+        <>
+          <h3>Xe về — kết thúc chuyến</h3>
+          <FormKetThuc c={c} phieu={phieu} chuyenNgay={chuyenNgay} sanPham={sanPham} xong={baoTin} />
+        </>
+      )}
+      {c.TrangThai === 'HoanThanh' && <KetQuaDoiSoat chuyenId={c.id} sanPham={sanPham} />}
       {loi && <p className="loi" role="alert">{loi}</p>}
     </section>
   )
@@ -147,7 +155,7 @@ export default function XuatKho({ sanPham, ton }: { sanPham: CoId<BanGhi>[]; ton
         {chuyen && ds.length === 0 && <p className="ghi-chu">Chưa có chuyến nào. Điều phối tạo chuyến trước.</p>}
       </section>
       {tin && <p className="tin-tot" role="status">{tin}</p>}
-      {ds.map((c) => <TheChuyen key={c.id} c={c} don={don ?? []} sanPham={sanPham} ton={ton} baoTin={setTin} />)}
+      {ds.map((c) => <TheChuyen key={c.id} c={c} don={don ?? []} sanPham={sanPham} ton={ton} baoTin={setTin} chuyenNgay={chuyen ?? []} />)}
     </>
   )
 }

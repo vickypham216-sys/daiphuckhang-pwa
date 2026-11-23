@@ -203,3 +203,9 @@ h3 { margin: 4px 0 0; font-size: 1rem; }
 .chu-loi { color: var(--loi) !important; font-weight: 600; }
 .dong-soat { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--vien); }
 .dong-soat small { color: var(--chu-phu); }
+
+.bang-dem { display: grid; gap: 6px; }
+.bang-dem-dau, .bang-dem-dong { display: grid; grid-template-columns: 1fr 80px 80px; gap: 6px; align-items: center; }
+.bang-dem-dau { font-size: 0.8rem; color: var(--chu-phu); }
+.bang-dem-dong input { padding: 10px 6px; text-align: right; min-width: 0; }
+.dong-soat .hang-nut input { flex: 1; min-width: 0; }

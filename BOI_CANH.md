@@ -439,3 +439,38 @@ Vicky: *"Không giới hạn, mỗi tối Admin soát danh sách giảm giá"*.
   Luật: tài xế ngoài tổ, tiền không khớp, giả TaoBoi, sửa/xoá phiếu, tự xác
   nhận CK, đặt đơn Đã giao không phiếu, sửa tài khoản CK đều bị chặn.
 - CHƯA: công nợ khách cộng dồn, hàng/vỏ/tiền cuối chuyến → bước 4.
+
+### Kết thúc chuyến — Vicky chốt (23/11/2026)
+
+*"Kế toán nhận tiền mặt, có bắt buộc đếm khi đổi tổ"*.
+- Tài xế nộp tiền mặt cho **Kế toán**; kế toán bấm xác nhận số thực nhận.
+- Hàng để lại trên xe mà **chuyến sau khác tổ → bắt buộc đếm**. Cùng tổ chạy
+  tiếp thì được bỏ qua đếm.
+
+### Bước 4: Kết thúc chuyến + nộp tiền + công nợ (23/11/2026)
+
+- **Tài xế**: hết khách chưa ghi (khách không nhận vẫn phải ghi "Không giao
+  được") → nút **🏁 Xong giao, về kho** (ghi từ máy tài xế, chạy cả khi mất
+  sóng). Firestore gửi lệnh theo đúng thứ tự, nên khi máy chủ thấy `VeKho` thì
+  mọi phiếu giao ghi trước đó cũng đã tới. Sau `VeKho` luật chặn ghi thêm phiếu.
+- **Thủ kho** (Kho → Xuất kho, thẻ chuyến "Về kho"): **ĐẾM MÙ** — không hiện
+  số phải có. Chọn *Trả hết về kho* (luôn đếm) hoặc *Để lại trên xe* (Vicky:
+  chuyến sau khác tổ → bắt buộc đếm; cùng tổ → được bỏ qua; chưa có chuyến sau
+  → bắt buộc). `functions/src/ketThucLogic.ts batBuocDem`.
+- Hàm `ketThucChuyen`: số phải có = TrenXe (để lại + xuất) − giao; vỏ = để lại
+  + thu; tiền mặt = Σ TienMat. Ghi `DoiSoatChuyen/{chuyenId}` (phải có, đếm,
+  chênh lệch, tiền phải nộp). Trả kho → TonKho +, TrenXe về 0; để lại → TrenXe
+  = số đếm. Cộng `CongNoKhach/{khachId}` (NoTien, NoVo theo sp — thu dư vỏ
+  trừ nợ cũ, CocVo, TienCoc). Khách lẻ không vào công nợ. Chuyến → HoanThanh,
+  `NopTien {ChoNop, PhaiNop}`. Chặn khi còn đơn chưa có phiếu trên máy chủ.
+- `xuatKho` mới: chặn xuất khi xe còn chuyến khác chưa kết thúc; phiếu xuất
+  ghi `DauChuyen` (hàng/vỏ để lại) → tài xế bán được cả hàng để lại.
+- **Kế toán → Tiền mặt**: chuyến chờ nộp, nhập số thực nhận → ghi chênh lệch
+  (Admin xử lý tay). **Kế toán → Công nợ**: nợ tiền, nợ vỏ, cọc theo khách.
+- Đã thử trên giả lập (luồng đầy đủ): xuất C2 khi C1 chưa xong bị chặn; về kho
+  lúc mất sóng; đếm bắt buộc (C2 khác tổ); chênh lệch đầy −1, vỏ −2; TrenXe
+  9 bình (4 để lại + 5) + 2 thùng, 15 vỏ; tài xế C2 thấy hàng để lại; kế toán
+  nhận 290k/300k → thiếu 10k; công nợ Quán B 200k + 3 vỏ. Luật: người ngoài tổ
+  báo về kho, tài xế tự chốt / sửa NopTien / đọc công nợ, kế toán ghi công nợ
+  thẳng, ghi phiếu sau khi chốt đều bị chặn.
+- CHƯA: thu nợ khách (tiền, vỏ, hoàn cọc), báo cáo.

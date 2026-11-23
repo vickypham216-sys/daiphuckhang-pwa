@@ -7,12 +7,13 @@
 
 import type { DongDon } from './donHang'
 
-export type TrangThaiChuyen = 'LapKeHoach' | 'DaXuatKho' | 'DangGiao' | 'HoanThanh' | 'Huy'
+export type TrangThaiChuyen = 'LapKeHoach' | 'DaXuatKho' | 'DangGiao' | 'VeKho' | 'HoanThanh' | 'Huy'
 
 export const TEN_TRANG_THAI_CHUYEN: Record<TrangThaiChuyen, string> = {
   LapKeHoach: 'Đang xếp đơn',
   DaXuatKho: 'Đã xuất kho',
   DangGiao: 'Đang giao',
+  VeKho: 'Về kho, chờ đối soát',
   HoanThanh: 'Hoàn thành',
   Huy: 'Đã huỷ',
 }
@@ -38,6 +39,8 @@ export interface Chuyen {
   TrangThai: TrangThaiChuyen
   GhiChu: string | null
   TaoBoi: string
+  /** Có sau khi kết thúc chuyến: tiền mặt tài xế phải nộp kế toán. */
+  NopTien?: { TrangThai: 'ChoNop' | 'DaNop' | 'KhongCo'; PhaiNop: number; SoNhan?: number; ChenhLech?: number; TenNguoi?: string }
 }
 
 /** Số chuyến tiếp theo của một xe trong ngày: lớn nhất hiện có + 1 (kể cả chuyến đã huỷ, để số không bị dùng lại). */
