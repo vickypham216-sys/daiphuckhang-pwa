@@ -2,7 +2,7 @@
 // Tài xế bấm "Đã nhận đủ hàng" sau khi thủ kho xuất (bằng chứng nhận hàng).
 // Giao từng khách + đơn tại chỗ: GiaoHang.tsx (chạy được khi mất sóng).
 import { useEffect, useState } from 'react'
-import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { goi, loiMayChu } from '../lib/goiMayChu'
 import { useNghe, useNgheMot, type CoId } from '../lib/nghe'
@@ -45,7 +45,7 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
   const { uid } = chung
   const phieu = useNgheMot<PhieuXuat>(() => (c.TrangThai === 'LapKeHoach' ? null : doc(db, 'PhieuXuat', c.id)), [c.id, c.TrangThai])
   const dangGiao = c.TrangThai === 'DangGiao'
-  const phieuGiao = usePhieuGiao(c.id, dangGiao || c.TrangThai === 'HoanThanh')
+  const phieuGiao = usePhieuGiao(c.id, dangGiao || c.TrangThai === 'VeKho' || c.TrangThai === 'HoanThanh')
   const [ban, setBan] = useState(false)
   const [loi, setLoi] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)
@@ -53,7 +53,7 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
   const laTaiXe = c.TaiXe.uid === uid
 
   // Hàng còn trên xe chưa giao = xuất − đã giao (theo phiếu của chuyến này).
-  const conTrenXe: Record<string, number> = {}
+  const conTrenXe: Record<string, number> = { ...(phieu?.DauChuyen?.Hang ?? {}) }
   for (const d of phieu?.Dong ?? []) conTrenXe[d.SanPhamId] = (conTrenXe[d.SanPhamId] ?? 0) + d.SoLuong
   for (const p of phieuGiao) for (const d of p.Dong) conTrenXe[d.SanPhamId] = (conTrenXe[d.SanPhamId] ?? 0) - d.SoLuong
   const giaoTheoDon = new Map(phieuGiao.filter((p) => p.DonId).map((p) => [p.DonId!, p]))
@@ -61,6 +61,17 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
   const tong = phieuGiao.reduce((t, p) => ({ tm: t.tm + p.TT.TienMat, ck: t.ck + p.TT.ChuyenKhoan, no: t.no + p.TT.GhiNo }), { tm: 0, ck: 0, no: 0 })
   const soChuaGui = phieuGiao.filter((p) => p.chuaGui).length
   const xongGiao = (t: string) => { setTin(t); setMoGiao(null) }
+  const conDonChuaGiao = c.DonIds.filter((id) => !giaoTheoDon.has(id)).length
+
+  function veKho() {
+    if (!confirm(`Xong giao, về kho?\n\nTiền mặt phải nộp kế toán: ${dinhDangSo(tong.tm)}đ.\nSau khi bấm sẽ không ghi thêm phiếu giao cho chuyến này được.`)) return
+    // Không await: mất sóng vẫn bấm được. Firestore gửi lệnh này SAU mọi phiếu
+    // giao ghi trước nó, nên kho sẽ thấy đủ phiếu khi thấy "Về kho".
+    updateDoc(doc(db, 'Chuyen', c.id), { TrangThai: 'VeKho', VeKhoLuc: serverTimestamp(), VeKhoBoi: uid }).catch((e) =>
+      alert(`Không gửi được "về kho": ${(e as Error).message}`),
+    )
+    setTin('Đã báo về kho. Thủ kho sẽ đếm hàng và vỏ; nộp tiền mặt cho kế toán.')
+  }
 
   async function nhan() {
     if (!phieu) return
@@ -152,13 +163,26 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
       {dangGiao && phieu && (
         <p className="ghi-chu">
           Hàng chưa giao trên xe: {Object.entries(conTrenXe).filter(([, n]) => n !== 0)
-            .map(([id, n]) => `${phieu.Dong.find((d) => d.SanPhamId === id)?.Ten ?? id}: ${n}`).join(' · ') || 'hết'}
+            .map(([id, n]) => `${String(chung.sanPham.find((x) => x.id === id)?.Ten ?? phieu.Dong.find((d) => d.SanPhamId === id)?.Ten ?? id)}: ${n}`).join(' · ') || 'hết'}
         </p>
       )}
       {dangGiao && moGiao !== 'taicho' && (
         <button className="nut-vien" onClick={() => { setMoGiao('taicho'); setTin(null) }}>+ Đơn tại chỗ (bán hàng dư)</button>
       )}
       {moGiao === 'taicho' && <FormGiao c={c} conTrenXe={conTrenXe} xong={xongGiao} huy={() => setMoGiao(null)} {...chung} />}
+
+      {dangGiao && !moGiao && (
+        conDonChuaGiao > 0
+          ? <p className="ghi-chu">Còn {conDonChuaGiao} khách chưa ghi giao. Khách không nhận thì vẫn bấm "Giao" → "Không giao được".</p>
+          : <button className="nut-to" onClick={veKho}>🏁 Xong giao, về kho</button>
+      )}
+      {c.TrangThai === 'VeKho' && <p className="tin-tot">Đã về kho — chờ thủ kho đếm. Nộp {dinhDangSo(tong.tm)}đ tiền mặt cho kế toán.</p>}
+      {c.TrangThai === 'HoanThanh' && c.NopTien && (
+        <p className={c.NopTien.TrangThai === 'ChoNop' ? 'canh-bao' : 'tin-tot'}>
+          {c.NopTien.TrangThai === 'ChoNop' ? `Chuyến đã chốt. Chờ nộp ${dinhDangSo(c.NopTien.PhaiNop)}đ cho kế toán.`
+            : c.NopTien.TrangThai === 'DaNop' ? `Kế toán đã nhận ${dinhDangSo(c.NopTien.SoNhan ?? 0)}đ.` : 'Chuyến đã chốt.'}
+        </p>
+      )}
     </section>
   )
 }

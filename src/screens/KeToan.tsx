@@ -9,6 +9,8 @@ import { useNghe, useNgheMot } from '../lib/nghe'
 import { dinhDangSo } from '../lib/so'
 import { hienNgay, ngayVN } from '../lib/donHang'
 import { taiKhoanHopLe, boDau as boDauQR, type TaiKhoanNhan } from '../lib/vietQR'
+import type { Chuyen } from '../lib/dieuPhoi'
+import { docSo } from '../lib/so'
 import MaQR from '../components/MaQR'
 import type { DongGiao, ThanhToan } from '../../functions/src/giaoLogic'
 
@@ -59,6 +61,80 @@ function ChuyenKhoan({ uid }: { uid: string }) {
           </li>
         ))}
       </ul>
+    </section>
+  )
+}
+
+function NopTien({ uid, tenToi }: { uid: string; tenToi: string }) {
+  const { ds, loi } = useNghe<Chuyen>(() => query(collection(db, 'Chuyen'), where('NopTien.TrangThai', '==', 'ChoNop')), [])
+  const [nhap, setNhap] = useState<Record<string, string>>({})
+  const [tin, setTin] = useState<string | null>(null)
+  const [loiGhi, setLoiGhi] = useState<string | null>(null)
+  async function nhan(c: Chuyen & { id: string }) {
+    const n = docSo(nhap[c.id] ?? '')
+    if (n === null || Number.isNaN(n)) return setLoiGhi('Nhập số tiền thực nhận.')
+    const lech = n - c.NopTien!.PhaiNop
+    if (lech !== 0 && !confirm(`Nhận ${dinhDangSo(n)}đ, phải nộp ${dinhDangSo(c.NopTien!.PhaiNop)}đ → ${lech < 0 ? 'THIẾU' : 'DƯ'} ${dinhDangSo(Math.abs(lech))}đ. Ghi nhận?`)) return
+    setLoiGhi(null)
+    try {
+      await updateDoc(doc(db, 'Chuyen', c.id), {
+        NopTien: { TrangThai: 'DaNop', PhaiNop: c.NopTien!.PhaiNop, SoNhan: n, ChenhLech: lech, Boi: uid, TenNguoi: tenToi, Luc: serverTimestamp() },
+      })
+      setTin(`Đã nhận ${dinhDangSo(n)}đ của ${c.TaiXe.HoTen}${lech ? ` (${lech < 0 ? 'thiếu' : 'dư'} ${dinhDangSo(Math.abs(lech))}đ — Admin xử lý)` : ''}.`)
+    } catch (e) {
+      setLoiGhi(String(e))
+    }
+  }
+  return (
+    <section className="the the-rong">
+      <h2>Tiền mặt chờ nộp ({(ds ?? []).length})</h2>
+      {loi && <p className="loi">{loi}</p>}
+      {tin && <p className="tin-tot">{tin}</p>}
+      {loiGhi && <p className="loi">{loiGhi}</p>}
+      {ds && ds.length === 0 && <p className="ghi-chu">Không có chuyến nào chờ nộp tiền.</p>}
+      {(ds ?? []).map((c) => (
+        <div key={c.id} className="dong-soat">
+          <strong>{c.TaiXe.HoTen} · {c.BienSo} C{c.SoChuyen} · {hienNgay(c.Ngay)}</strong>
+          <small>Phải nộp: <strong>{dinhDangSo(c.NopTien!.PhaiNop)}đ</strong></small>
+          <div className="hang-nut">
+            <input inputMode="numeric" aria-label={`Số nhận ${c.TaiXe.HoTen}`} placeholder="Số thực nhận" value={nhap[c.id] ? dinhDangSo(docSo(nhap[c.id]) ?? 0) : ''}
+              onChange={(e) => setNhap({ ...nhap, [c.id]: e.target.value.replace(/\D/g, '') })} />
+            <button onClick={() => nhan(c)}>Đã nhận</button>
+          </div>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+interface CongNo { TenKhach: string; NoTien: number; NoVo: Record<string, number>; CocVo: Record<string, number>; TienCoc: number }
+
+function CongNoKhach() {
+  const { ds, loi } = useNghe<CongNo>(() => collection(db, 'CongNoKhach'), [])
+  const { ds: sp } = useNghe<{ Ten: string }>(() => collection(db, 'SanPham'), [])
+  const ten = (id: string) => sp?.find((x) => x.id === id)?.Ten ?? id
+  const coNo = (ds ?? []).filter((c) => c.NoTien !== 0 || Object.values(c.NoVo ?? {}).some((n) => n !== 0) || c.TienCoc !== 0)
+    .sort((a, b) => b.NoTien - a.NoTien)
+  const tong = coNo.reduce((s, c) => s + c.NoTien, 0)
+  return (
+    <section className="the the-rong">
+      <h2>Công nợ khách ({coNo.length}) · nợ tiền {dinhDangSo(tong)}đ</h2>
+      {loi && <p className="loi">{loi}</p>}
+      {ds && coNo.length === 0 && <p className="ghi-chu">Chưa có khách nào nợ.</p>}
+      <table className="bang-ton">
+        <thead><tr><th>Khách</th><th>Nợ tiền</th><th>Nợ vỏ</th><th>Cọc</th></tr></thead>
+        <tbody>
+          {coNo.map((c) => (
+            <tr key={c.id}>
+              <td>{c.TenKhach}</td>
+              <td>{dinhDangSo(c.NoTien)}</td>
+              <td>{Object.entries(c.NoVo ?? {}).filter(([, n]) => n).map(([k, n]) => `${n} ${ten(k)}`).join(', ') || '—'}</td>
+              <td>{c.TienCoc ? `${dinhDangSo(c.TienCoc)}đ` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="ghi-chu">Số được cộng khi thủ kho chốt chuyến. Nợ vỏ âm = công ty đang giữ dư vỏ của khách. Thu nợ: bước sau.</p>
     </section>
   )
 }
@@ -140,16 +216,20 @@ function TaiKhoanCK() {
   )
 }
 
-export default function KeToan({ uid, laAdmin }: { uid: string; laAdmin: boolean }) {
-  const [muc, setMuc] = useState<'ck' | 'soat' | 'tk'>('ck')
+export default function KeToan({ uid, tenToi, laAdmin }: { uid: string; tenToi: string; laAdmin: boolean }) {
+  const [muc, setMuc] = useState<'tien' | 'ck' | 'no' | 'soat' | 'tk'>('tien')
   return (
     <div className="man">
       <div className="hang-nut nho">
+        <button className={muc === 'tien' ? '' : 'nut-vien'} onClick={() => setMuc('tien')}>Tiền mặt</button>
         <button className={muc === 'ck' ? '' : 'nut-vien'} onClick={() => setMuc('ck')}>Chuyển khoản</button>
+        <button className={muc === 'no' ? '' : 'nut-vien'} onClick={() => setMuc('no')}>Công nợ</button>
         <button className={muc === 'soat' ? '' : 'nut-vien'} onClick={() => setMuc('soat')}>Soát giảm giá</button>
         {laAdmin && <button className={muc === 'tk' ? '' : 'nut-vien'} onClick={() => setMuc('tk')}>Tài khoản nhận CK</button>}
       </div>
+      {muc === 'tien' && <NopTien uid={uid} tenToi={tenToi} />}
       {muc === 'ck' && <ChuyenKhoan uid={uid} />}
+      {muc === 'no' && <CongNoKhach />}
       {muc === 'soat' && <SoatNgay />}
       {muc === 'tk' && laAdmin && <TaiKhoanCK />}
     </div>

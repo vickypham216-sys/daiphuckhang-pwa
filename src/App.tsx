@@ -179,7 +179,7 @@ export default function App() {
       )}
       <main className="noi-dung">
         {manHien === 'ketoan' ? (
-          <KeToan uid={phien.uid} laAdmin={laAdmin} />
+          <KeToan uid={phien.uid} tenToi={phien.hoSo.HoTen} laAdmin={laAdmin} />
         ) : manHien === 'chuyen' ? (
           <ChuyenCuaToi uid={phien.uid} tenToi={phien.hoSo.HoTen} />
         ) : manHien === 'kho' ? (

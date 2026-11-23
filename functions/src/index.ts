@@ -16,6 +16,7 @@ import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/
 import { kiemTraNhanVienMoi, MAT_KHAU_TOI_THIEU } from "./nhanVienLogic";
 import { docDongNhap, maNoVo, tinhNhap, tongTienNhap, type Ton } from "./khoLogic";
 import { congLenXe, docDongXuat, tinhXuat, tongTheoSanPham, type DongXuat } from "./xuatLogic";
+import { batBuocDem, chenhLech, cong, congNoTuPhieu, soPhaiCo, type PhieuTinh, type TheoSp } from "./ketThucLogic";
 
 initializeApp();
 setGlobalOptions({ region: "asia-southeast1", maxInstances: 5 });
@@ -251,6 +252,12 @@ export const xuatKho = onCall(async (req) => {
       }
     }
 
+    // Một xe chỉ chạy MỘT chuyến một lúc: hàng trên xe tính theo xe, hai
+    // chuyến cùng mở thì không tách được hàng của chuyến nào.
+    const dangChay = await tx.get(db().collection("Chuyen").where("XeId", "==", cd.XeId).where("TrangThai", "in", ["DaXuatKho", "DangGiao", "VeKho"]));
+    const khac = dangChay.docs.find((x) => x.id !== chuyenId);
+    if (khac) throw new HttpsError("failed-precondition", `Xe ${cd.BienSo} còn chuyến ${khac.data().SoChuyen} chưa kết thúc. Kết thúc chuyến đó trước.`);
+
     const refTon = dong.map((d) => db().collection("TonKho").doc(d.SanPhamId));
     const refXe = db().collection("TrenXe").doc(String(cd.XeId));
     const [snapTon, xe] = await Promise.all([Promise.all(refTon.map((r) => tx.get(r))), tx.get(refXe)]);
@@ -269,6 +276,8 @@ export const xuatKho = onCall(async (req) => {
     tx.set(refP, {
       ChuyenId: chuyenId, Ngay: cd.Ngay, XeId: cd.XeId, BienSo: cd.BienSo, SoChuyen: cd.SoChuyen,
       TaiXe: cd.TaiXe, PhuXe: cd.PhuXe ?? [], Dong: dong, GhiChu: ghiChu || null,
+      // Hàng để lại trên xe từ chuyến trước — tài xế bán được cả phần này.
+      DauChuyen: { Hang: xe.data()?.Hang ?? {}, VoRong: xe.data()?.VoRong ?? {} },
       TrangThai: "ChoNhan", TaoBoi: nguoi.uid, TenNguoiTao: nguoi.HoTen, TaoLuc: FieldValue.serverTimestamp(),
     });
     // ToXeUids do MÁY CHỦ đặt lại từ TaiXe + PhuXe — luật PhieuGiao dựa vào nó.
@@ -329,4 +338,106 @@ export const nhanHang = onCall(async (req) => {
     tx.update(refC, { TrangThai: "DangGiao", SuaLuc: FieldValue.serverTimestamp(), SuaBoi: uid });
   });
   return { ok: true };
+});
+
+// ── KẾT THÚC CHUYẾN ─────────────────────────────────────────────────────
+// Tài xế bấm "Xong giao, về kho" (ghi từ máy tài xế — Firestore gửi theo
+// đúng thứ tự, nên khi lệnh này tới máy chủ thì mọi phiếu giao ghi trước nó
+// cũng đã tới). Thủ kho đếm (KHÔNG thấy số phải có — đếm mù) → hàm này tính
+// chênh lệch, trả kho hoặc để lại trên xe, cộng công nợ khách, chốt chuyến.
+
+export const ketThucChuyen = onCall(async (req) => {
+  const nguoi = await batBuocVaiTro(req, ["Admin", "ThuKho"]);
+  const chuyenId = req.data?.ChuyenId;
+  if (typeof chuyenId !== "string" || !chuyenId) throw new HttpsError("invalid-argument", "Thiếu chuyến.");
+  const deLai = req.data?.DeLai === true;
+  const docTheoSp = (v: unknown, ten: string): TheoSp | null => {
+    if (v == null) return null;
+    if (typeof v !== "object") throw new HttpsError("invalid-argument", `${ten} không hợp lệ.`);
+    const kq: TheoSp = {};
+    for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > 100000) throw new HttpsError("invalid-argument", `${ten}: số đếm không hợp lệ.`);
+      kq[k] = n;
+    }
+    return kq;
+  };
+  const demDay = docTheoSp(req.data?.DemDay, "Hàng đầy");
+  const demVo = docTheoSp(req.data?.DemVoRong, "Vỏ rỗng");
+  const ghiChu = typeof req.data?.GhiChu === "string" ? req.data.GhiChu.trim().slice(0, 300) : "";
+
+  const kq = await db().runTransaction(async (tx) => {
+    const refC = db().collection("Chuyen").doc(chuyenId);
+    const c = await tx.get(refC);
+    if (!c.exists) throw new HttpsError("not-found", "Không tìm thấy chuyến.");
+    const cd = c.data()!;
+    if (cd.TrangThai !== "VeKho") throw new HttpsError("failed-precondition", "Tài xế chưa bấm \"Xong giao, về kho\".");
+    const toNay: string[] = cd.ToXeUids ?? [];
+
+    // Chuyến kế tiếp của xe trong ngày (nếu đã có) — để biết có bắt buộc đếm không.
+    const sau = (await tx.get(db().collection("Chuyen").where("XeId", "==", cd.XeId).where("Ngay", "==", cd.Ngay))).docs
+      .map((x) => x.data())
+      .filter((x) => x.SoChuyen > cd.SoChuyen && x.TrangThai !== "Huy")
+      .sort((a, b) => a.SoChuyen - b.SoChuyen)[0];
+    const toSau: string[] | null = sau ? [sau.TaiXe?.uid, ...((sau.PhuXe ?? []) as { uid: string }[]).map((x) => x.uid)].filter(Boolean) : null;
+    const phaiDem = batBuocDem(deLai, toNay, toSau);
+    if (phaiDem && (!demDay || !demVo)) throw new HttpsError("invalid-argument", deLai ? "Chuyến sau khác tổ xe (hoặc chưa có) — bắt buộc đếm hàng và vỏ trên xe." : "Trả hàng về kho — cần nhập số đếm.");
+
+    const phieuSnap = await tx.get(db().collection("PhieuGiao").where("ChuyenId", "==", chuyenId));
+    const phieu = phieuSnap.docs.map((x) => x.data() as PhieuTinh & { DonId: string | null });
+    const coPhieu = new Set(phieu.map((p) => p.DonId).filter(Boolean));
+    const thieuPhieu = ((cd.DonIds ?? []) as string[]).filter((id) => !coPhieu.has(id));
+    if (thieuPhieu.length) throw new HttpsError("failed-precondition", `Còn ${thieuPhieu.length} đơn chưa có phiếu giao trên máy chủ (có thể máy tài xế chưa gửi). Nhờ tài xế mở app khi có mạng.`);
+
+    const refXe = db().collection("TrenXe").doc(String(cd.XeId));
+    const xe = (await tx.get(refXe)).data() ?? {};
+    const pc = soPhaiCo(xe, phieu);
+    const dDay = demDay ?? pc.Day, dVo = demVo ?? pc.VoRong;
+    const clDay = chenhLech(pc.Day, dDay), clVo = chenhLech(pc.VoRong, dVo);
+
+    const cn = congNoTuPhieu(phieu, (p, sp) => p.Dong.find((d) => d.SanPhamId === sp)?.SoLuong ?? 0);
+    const refCn = Object.keys(cn).map((id) => db().collection("CongNoKhach").doc(id));
+    const snapCn = await Promise.all(refCn.map((r) => tx.get(r)));
+    const spIds = [...new Set([...Object.keys(dDay), ...Object.keys(dVo)])].filter((k) => (dDay[k] ?? 0) > 0 || (dVo[k] ?? 0) > 0);
+    const refTon = deLai ? [] : spIds.map((id) => db().collection("TonKho").doc(id));
+    const snapTon = await Promise.all(refTon.map((r) => tx.get(r)));
+
+    // ── ghi ──
+    if (deLai) {
+      // mergeFields: THAY CẢ map (merge thường giữ lại khoá cũ không có trong số đếm).
+      tx.set(refXe, { Hang: dDay, VoRong: dVo, CapNhat: FieldValue.serverTimestamp() }, { mergeFields: ["Hang", "VoRong", "CapNhat"] });
+    } else {
+      spIds.forEach((id, i) => {
+        const t = snapTon[i].data() ?? {};
+        tx.set(refTon[i], { Day: (t.Day ?? 0) + (dDay[id] ?? 0), VoRong: (t.VoRong ?? 0) + (dVo[id] ?? 0), CapNhat: FieldValue.serverTimestamp() }, { merge: true });
+      });
+      // Ghi đè (không merge): map Hang/VoRong phải về rỗng, merge sẽ giữ khoá cũ.
+      tx.set(refXe, { XeId: cd.XeId, BienSo: cd.BienSo, Hang: {}, VoRong: {}, CapNhat: FieldValue.serverTimestamp() });
+    }
+    Object.entries(cn).forEach(([id, them], i) => {
+      const cu = snapCn[i].data() ?? {};
+      tx.set(refCn[i], {
+        KhachHangId: id, TenKhach: them.TenKhach,
+        NoTien: (cu.NoTien ?? 0) + them.NoTien,
+        NoVo: cong(cu.NoVo, them.NoVo),
+        CocVo: cong(cu.CocVo, them.CocVo),
+        TienCoc: (cu.TienCoc ?? 0) + them.TienCoc,
+        CapNhat: FieldValue.serverTimestamp(),
+      });
+    });
+    const doiSoat = {
+      ChuyenId: chuyenId, Ngay: cd.Ngay, BienSo: cd.BienSo, SoChuyen: cd.SoChuyen, TaiXe: cd.TaiXe, PhuXe: cd.PhuXe ?? [],
+      PhaiCo: { Day: pc.Day, VoRong: pc.VoRong }, Dem: phaiDem || demDay ? { Day: dDay, VoRong: dVo } : null,
+      ChenhLech: { Day: clDay, VoRong: clVo }, DeLai: deLai, CoDem: !!demDay,
+      TienMatPhaiNop: pc.TienMat, GhiChu: ghiChu || null,
+      Boi: nguoi.uid, TenNguoi: nguoi.HoTen, Luc: FieldValue.serverTimestamp(),
+    };
+    tx.set(db().collection("DoiSoatChuyen").doc(chuyenId), doiSoat);
+    tx.update(refC, {
+      TrangThai: "HoanThanh",
+      NopTien: { TrangThai: pc.TienMat > 0 ? "ChoNop" : "KhongCo", PhaiNop: pc.TienMat },
+      SuaLuc: FieldValue.serverTimestamp(), SuaBoi: nguoi.uid,
+    });
+    return { ChenhLech: { Day: clDay, VoRong: clVo }, TienMatPhaiNop: pc.TienMat };
+  });
+  return kq;
 });

@@ -163,12 +163,26 @@ service cloud.firestore {
         && request.resource.data.TaoBoi == request.auth.uid;
       // Chỉ sửa khi còn "LapKeHoach". Không đổi ngày, xe, số chuyến, người
       // tạo. Huỷ chỉ khi không còn đơn nào. Xuất kho (bước sau) do máy chủ ghi.
-      allow update: if laDieuPhoi()
+      allow update: if (laDieuPhoi()
         && resource.data.TrangThai == 'LapKeHoach'
         && chuyenHopLe(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['TaiXe', 'PhuXe', 'ToXeUids', 'GhiChu', 'DonIds', 'TrangThai', 'SuaLuc', 'SuaBoi'])
         && (request.resource.data.TrangThai == 'LapKeHoach'
-            || (request.resource.data.TrangThai == 'Huy' && request.resource.data.DonIds.size() == 0));
+            || (request.resource.data.TrangThai == 'Huy' && request.resource.data.DonIds.size() == 0)))
+        // Tài xế / phụ xe báo "Xong giao, về kho".
+        || (trongToXe(resource.data)
+            && resource.data.TrangThai == 'DangGiao' && request.resource.data.TrangThai == 'VeKho'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['TrangThai', 'VeKhoLuc', 'VeKhoBoi'])
+            && request.resource.data.VeKhoBoi == request.auth.uid)
+        // Kế toán xác nhận đã nhận tiền mặt.
+        || (vaiTro() in ['Admin', 'KeToan']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['NopTien'])
+            && resource.data.NopTien.TrangThai == 'ChoNop'
+            && request.resource.data.NopTien.TrangThai == 'DaNop'
+            && request.resource.data.NopTien.PhaiNop == resource.data.NopTien.PhaiNop
+            && request.resource.data.NopTien.SoNhan is int && request.resource.data.NopTien.SoNhan >= 0
+            && request.resource.data.NopTien.ChenhLech == request.resource.data.NopTien.SoNhan - resource.data.NopTien.PhaiNop
+            && request.resource.data.NopTien.Boi == request.auth.uid);
       allow delete: if false;
     }
 
@@ -271,6 +285,17 @@ service cloud.firestore {
     match /CaiDat/{id} {
       allow read: if laNhanVien();
       allow write: if laAdmin();
+    }
+
+    // ── KẾT THÚC CHUYẾN ─────────────────────────────────────────────────
+    // Máy chủ ghi (ketThucChuyen). Công nợ: Sales xem được để nhắc khách.
+    match /DoiSoatChuyen/{id} {
+      allow read: if vaiTro() in ['Admin', 'ThuKho', 'KeToan', 'DieuPhoi'];
+      allow write: if false;
+    }
+    match /CongNoKhach/{id} {
+      allow read: if vaiTro() in ['Admin', 'KeToan', 'Sales'];
+      allow write: if false;
     }
   }
 }
