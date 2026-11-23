@@ -551,3 +551,44 @@ mia water"*.
 - **Đo bằng máy ở 375 / 768 / 1280px** (`scratchpad bc.cjs`): tràn ngang, ô
   bấm < 44px, chữ bị cắt. Sửa: con của lưới phải `min-width: 0` (svg + dải
   chip đẩy thẻ tràn 11px ở 375px); số doanh thu không gãy "đ" xuống dòng.
+
+### Báo cáo tồn kho & vỏ (23/11/2026)
+
+Vicky: *"Làm báo cáo tồn kho và vỏ tiếp đi"*.
+
+- Tab **Báo cáo** có 2 mục: Doanh thu (Admin, Kế toán) · **Tồn kho & vỏ**
+  (Admin, Kế toán, **Thủ kho** — thủ kho chỉ thấy mục này).
+- **Hàng & vỏ hiện tại** (ảnh chụp từ sổ máy chủ), mỗi sản phẩm một thẻ:
+  kho đầy, trên xe đầy; với SP có vỏ: vỏ rỗng kho / xe, khách nợ vỏ, khách
+  cọc vỏ → **vỏ đang lưu hành**; trừ nợ vỏ NCC → **vỏ của công ty**. "Trên xe"
+  = số lúc xuất kho / chốt gần nhất (chưa trừ hàng đang giao dở) — có ghi chú.
+- **Nhập – xuất – tồn theo kỳ** (≤ 93 ngày lùi): dựng NGƯỢC từ tồn hiện tại:
+  cuối kỳ = hiện tại − biến động sau kỳ; đầu kỳ = cuối − biến động trong kỳ.
+  Biến động = PhieuNhap (đầy +, vỏ − trả NCC), PhieuXuat (đầy −), DoiSoatChuyen
+  trả kho (đầy +, vỏ +), DieuChinhTon (± theo trước/sau). ⚠️ **Thêm chứng từ
+  mới làm đổi TonKho thì PHẢI thêm vào `bienDongTu()`**, không thì XNT lệch.
+  Huỷ xuất kho = phiếu bị xoá + hàng trả lại → tự triệt tiêu.
+- **Hao hụt khi chốt chuyến** trong kỳ (Σ chênh lệch đầy / vỏ, danh sách chuyến
+  lệch) + **khách giữ nhiều vỏ nhất**.
+- `src/lib/baoCaoKho.ts` + `scripts/kiemTraBaoCaoKho.ts` (dựng lại lịch sử 5
+  ngày, khớp từng bước). Luật: Thủ kho được đọc CongNoKhach, DieuChinhTon.
+
+### Rà UX toàn app (23/11/2026)
+
+Vicky: *"check UX/UI của toàn bộ app, prefer như app mia water"*.
+
+- `scripts/raUX.cjs` (Playwright): 3 vai trò (Admin, Tài xế, Sales) × mọi tab
+  × các mục / form mở (Giao, Thu nợ, Đơn tại chỗ, Tạo đơn, Nhập hàng…) × **375
+  / 768 / 1280px**. Đo: tràn ngang, phần tử ra ngoài khung, **vùng chạm < 44px**,
+  chữ bị cắt, **tương phản < 4,5:1** (chữ thường) / 3:1 (chữ lớn). Lưu ảnh 375px.
+  Dữ liệu mẫu đủ trạng thái: chuyến đang giao / lập kế hoạch / chờ nộp tiền,
+  phiếu CK chờ, giảm giá, công nợ, tên khách + địa chỉ dài.
+- Máy đo thấy (đã sửa): nút phụ 36px, ô ngày 40px, ô số 42px, SĐT bấm-gọi 17px
+  (`a.goi`), ô tick 26px → tất cả ≥ 44px. Không có tràn / cắt chữ / thiếu tương
+  phản.
+- Soi ảnh thấy (máy không bắt được, đã sửa): danh sách đơn trong chuyến bó
+  thông tin khách vào nửa màn (chừa chỗ cho ↑↓✕ cả ở màn tài xế) → flex, khách
+  chiếm hết bề ngang; nút "Lưu giao hàng" gãy 3 dòng → rộng gấp đôi Huỷ; 4 nút
+  cách trả tiền xếp lưới 2×2 trên điện thoại. ⚠️ Đổi `<li>` sang flex làm MẤT số
+  thứ tự của `<ol>` — đã tự đánh lại bằng CSS counter (thứ tự giao là thông tin
+  chính của tài xế).

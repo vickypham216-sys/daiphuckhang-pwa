@@ -10,6 +10,7 @@ import {
   type Dong3, type MaKy, type PhieuBC,
 } from '../lib/baoCao'
 import BieuDoCot from '../components/BieuDoCot'
+import BaoCaoKho from './BaoCaoKho'
 
 const KY: MaKy[] = ['homnay', 'homqua', '7ngay', 'thangnay', 'thangtruoc']
 const TOI_DA_NGAY = 93
@@ -53,7 +54,7 @@ function BangTop({ tieuDe, cot1, ds, tong, gioiHan }: { tieuDe: string; cot1: st
   )
 }
 
-export default function BaoCao() {
+function BaoCaoDoanhThu() {
   const [ma, setMa] = useState<MaKy | 'tuy'>('homnay')
   const [tuyChon, setTuyChon] = useState(() => kyBaoCao('7ngay'))
   const ky = ma === 'tuy' ? tuyChon : kyBaoCao(ma)
@@ -152,5 +153,22 @@ export default function BaoCao() {
         </>
       )}
     </div>
+  )
+}
+
+/** Tab Báo cáo: Doanh thu (Admin, Kế toán) · Tồn kho & vỏ (Admin, Kế toán, Thủ kho). */
+export default function BaoCao({ vaiTro }: { vaiTro: string }) {
+  const xemDoanhThu = vaiTro === 'Admin' || vaiTro === 'KeToan'
+  const [muc, setMuc] = useState<'dt' | 'kho'>(xemDoanhThu ? 'dt' : 'kho')
+  return (
+    <>
+      {xemDoanhThu && (
+        <div className="hang-nut nho thanh-muc">
+          <button className={muc === 'dt' ? '' : 'nut-vien'} onClick={() => setMuc('dt')}>Doanh thu</button>
+          <button className={muc === 'kho' ? '' : 'nut-vien'} onClick={() => setMuc('kho')}>Tồn kho & vỏ</button>
+        </div>
+      )}
+      {muc === 'dt' && xemDoanhThu ? <BaoCaoDoanhThu /> : <BaoCaoKho />}
+    </>
   )
 }

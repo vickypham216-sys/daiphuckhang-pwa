@@ -140,7 +140,8 @@ export default function App() {
     ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối' }] : []),
     ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [{ ma: 'chuyen' as Man, ten: 'Chuyến của tôi' }] : []),
     ...(laAdmin || vaiTro === 'ThuKho' || vaiTro === 'KeToan' ? [{ ma: 'kho' as Man, ten: 'Kho' }] : []),
-    ...(laAdmin || vaiTro === 'KeToan' ? [{ ma: 'ketoan' as Man, ten: 'Kế toán' }, { ma: 'baocao' as Man, ten: 'Báo cáo' }] : []),
+    ...(laAdmin || vaiTro === 'KeToan' ? [{ ma: 'ketoan' as Man, ten: 'Kế toán' }] : []),
+    ...(laAdmin || vaiTro === 'KeToan' || vaiTro === 'ThuKho' ? [{ ma: 'baocao' as Man, ten: 'Báo cáo' }] : []),
     ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi'
       ? [
           { ma: 'donhang' as Man, ten: 'Đơn hàng' },
@@ -180,7 +181,7 @@ export default function App() {
       )}
       <main className="noi-dung">
         {manHien === 'baocao' ? (
-          <BaoCao />
+          <BaoCao vaiTro={vaiTro} />
         ) : manHien === 'ketoan' ? (
           <KeToan uid={phien.uid} tenToi={phien.hoSo.HoTen} laAdmin={laAdmin} />
         ) : manHien === 'chuyen' ? (

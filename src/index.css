@@ -267,3 +267,44 @@ h3 { margin: 4px 0 0; font-size: 1rem; }
    cả thẻ tràn ra khỏi màn 375px. Ép về 0 để thẻ co theo khung. */
 .the > *, .man > *, .bieu-do > * { min-width: 0; }
 .bieu-do-khung { overflow: hidden; }
+
+.thanh-muc { max-width: 1100px; margin: 0 auto 16px; }
+.luoi-the { display: grid; gap: 16px; }
+@media (min-width: 768px) { .luoi-the { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+@media (min-width: 1200px) { .luoi-the { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.the-so { gap: 0; }
+.the-so h3 { margin: 0 0 6px; }
+.the-so hr { border: 0; border-top: 1px solid var(--vien); margin: 8px 0; width: 100%; }
+.dong-so { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #edf0f3; font-variant-numeric: tabular-nums; }
+.dong-so > span:last-child { white-space: nowrap; }
+.dong-so small { display: block; color: var(--chu-phu); font-size: 0.78rem; }
+.dong-so.dam { font-weight: 700; border-bottom-style: solid; }
+
+/* ── Vùng chạm ≥ 44px (rà toàn app 23/11/2026, như MIA) ─────────────────
+   Máy đo thấy: nút phụ 36px, ô ngày 40px, ô số 42px, SĐT bấm-gọi 17px, ô tick
+   26px. Ngón tay tài xế đứng ngoài nắng cần ≥ 44px. */
+input, select { min-height: 44px; }
+.nut-phu, .hang-nut.nho button, .khach-da-chon button, .nut-dong button { min-height: 44px; }
+.nut-dong button { min-width: 44px; }
+.o-tick { min-height: 44px; }
+a.goi { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; margin: -12px 0; }
+.bang-sp-dong input, .bang-giao-dong input, .bang-nhap-dong input, .bang-xuat-dong input, .bang-dem-dong input { min-height: 44px; }
+
+/* ── Danh sách đơn trong chuyến: thông tin khách chiếm hết bề ngang, nút bên
+   phải; form giao mở ra thì xuống dòng, rộng hết thẻ (soi ảnh 375px: địa chỉ
+   bị bó nửa màn, gãy 4 dòng vì chừa 132px cho nút ↑↓✕ kể cả ở màn tài xế). */
+.ds-don-chuyen li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+.ds-don-chuyen li > span:first-child { flex: 1 1 200px; max-width: none; display: block; }
+.ds-don-chuyen li > .nut-dong, .ds-don-chuyen li > .nut-giao { float: none; flex: 0 0 auto; }
+.ds-don-chuyen li > .form-giao { flex: 1 1 100%; }
+/* Nút lưu là việc chính — rộng gấp đôi nút huỷ, chữ không gãy 3 dòng. */
+.form-giao .hang-nut button.nut-to { flex: 2; }
+.form-giao .hang-nut button.nut-vien { flex: 1; }
+.khoi-tien .hang-nut.nho { display: grid; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 480px) { .khoi-tien .hang-nut.nho { grid-template-columns: repeat(4, 1fr); } }
+/* li đổi sang flex thì MẤT số thứ tự của <ol> — tự đánh lại bằng counter
+   (thứ tự giao là thông tin chính của tài xế). */
+.ds-don-chuyen { list-style: none; padding-left: 0; counter-reset: thu-tu; }
+.ds-don-chuyen li { padding-left: 0; }
+.ds-don-chuyen li::before { counter-increment: thu-tu; content: counter(thu-tu) "."; font-weight: 700; min-width: 22px; line-height: 1.5; }
+.ds-don-chuyen li > span:first-child { flex: 1 1 0%; min-width: 0; }

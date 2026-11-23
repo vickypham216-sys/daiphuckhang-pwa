@@ -152,7 +152,7 @@ function TheChuyen({ c, don, ...chung }: { c: CoId<Chuyen>; don: Map<string, CoI
               <span>
                 <strong>{d.TenKhach}</strong>
                 <small>📍 {d.DiaChi}</small>
-                {d.SoDienThoai && <small>📞 <a href={`tel:${d.SoDienThoai}`}>{d.SoDienThoai}</a></small>}
+                {d.SoDienThoai && <small>📞 <a className="goi" href={`tel:${d.SoDienThoai}`}>{d.SoDienThoai}</a></small>}
                 <small>{tomTatDong(d.Dong)}</small>
                 {(d.GhiChuKhach || d.GhiChu) && <small>📝 {[d.GhiChuKhach, d.GhiChu].filter(Boolean).join(' · ')}</small>}
                 {pg && (
