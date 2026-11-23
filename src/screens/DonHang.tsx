@@ -322,7 +322,7 @@ export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }
                 <div className="dong-nv-than">
                   <p className="ghi-chu">
                     📍 {d.DiaChi}
-                    {d.SoDienThoai && <> · 📞 <a href={`tel:${d.SoDienThoai}`}>{d.SoDienThoai}</a></>}
+                    {d.SoDienThoai && <> · 📞 <a className="goi" href={`tel:${d.SoDienThoai}`}>{d.SoDienThoai}</a></>}
                   </p>
                   {d.GhiChuKhach && <p className="ghi-chu">Khách: {d.GhiChuKhach}</p>}
                   <table className="bang-chi-tiet">

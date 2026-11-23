@@ -207,7 +207,7 @@ service cloud.firestore {
       allow write: if false;
     }
     match /DieuChinhTon/{id} {
-      allow read: if vaiTro() in ['Admin', 'KeToan'];
+      allow read: if vaiTro() in ['Admin', 'KeToan', 'ThuKho'];
       allow write: if false;
     }
 
@@ -297,7 +297,7 @@ service cloud.firestore {
     }
     match /CongNoKhach/{id} {
       // Tài xế / phụ xe xem để nhắc khách và thu nợ trên đường.
-      allow read: if vaiTro() in ['Admin', 'KeToan', 'Sales', 'TaiXe', 'PhuXe'];
+      allow read: if vaiTro() in ['Admin', 'KeToan', 'Sales', 'TaiXe', 'PhuXe', 'ThuKho'];
       allow write: if false;
     }
 
