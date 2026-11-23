@@ -293,6 +293,10 @@ service cloud.firestore {
       allow read: if vaiTro() in ['Admin', 'ThuKho', 'KeToan', 'DieuPhoi'];
       allow write: if false;
     }
+    match /DieuChinhCongNo/{id} {
+      allow read: if vaiTro() in ['Admin', 'KeToan'];
+      allow write: if false;
+    }
     match /CongNoKhach/{id} {
       allow read: if vaiTro() in ['Admin', 'KeToan', 'Sales'];
       allow write: if false;

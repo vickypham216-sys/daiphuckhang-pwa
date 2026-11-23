@@ -474,3 +474,24 @@ Vicky: *"Không giới hạn, mỗi tối Admin soát danh sách giảm giá"*.
   báo về kho, tài xế tự chốt / sửa NopTien / đọc công nợ, kế toán ghi công nợ
   thẳng, ghi phiếu sau khi chốt đều bị chặn.
 - CHƯA: thu nợ khách (tiền, vỏ, hoàn cọc), báo cáo.
+
+### Nhập công nợ đầu kỳ (23/11/2026)
+
+Vicky: *"Làm nhập công nợ đầu kỳ trước"* (trước thu nợ, để chuẩn bị chạy thử).
+
+- **Kế toán → Công nợ → "Nhập công nợ đầu kỳ (dán từ Excel)"** (chỉ Admin).
+  Cột cố định: Tên | SĐT | Địa chỉ | Nợ tiền | Nợ vỏ <mỗi SP có vỏ> | Vỏ cọc
+  <mỗi SP có vỏ> | Tiền cọc. Nút 📋 chép dòng tiêu đề để dán vào Excel. Xem
+  trước từng dòng: Có rồi / Tạo mới / Trùng tên. Ô dán khoá tới khi tải xong
+  danh mục (dán sớm thì cột vỏ bị lệch — đã thấy khi thử).
+- Tìm khách: SĐT trùng trước, rồi tên trùng DUY NHẤT; không có → **tạo khách
+  mới** (thiếu địa chỉ thì ghi "(chưa có địa chỉ)"). Excel ăn số 0 đầu SĐT →
+  tự thêm lại.
+- Hàm `nhapCongNoDauKy`: đầu kỳ lưu riêng `CongNoKhach.DauKy`; tổng = tổng
+  hiện tại − đầu kỳ cũ + đầu kỳ mới → **nhập lại là THAY, không cộng dồn**, và
+  không mất phần phát sinh qua chuyến. Vết: `DieuChinhCongNo`. Một khách hai
+  dòng trong cùng lần dán → bỏ dòng sau, báo lỗi.
+- Logic: `functions/src/dauKyLogic.ts` + test.
+- Đã thử: khách có sẵn (nợ phát sinh 200k + 1 vỏ) + đầu kỳ 1tr/5 vỏ → 1,2tr/6;
+  nhập lại 800k/4 vỏ → 1tr/5 (đúng, không cộng dồn); khách mới được tạo kèm
+  cọc 2 vỏ / 100k; SĐT sai báo lỗi dòng.

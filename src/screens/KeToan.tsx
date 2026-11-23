@@ -12,6 +12,7 @@ import { taiKhoanHopLe, boDau as boDauQR, type TaiKhoanNhan } from '../lib/vietQ
 import type { Chuyen } from '../lib/dieuPhoi'
 import { docSo } from '../lib/so'
 import MaQR from '../components/MaQR'
+import NhapDauKy from './NhapDauKy'
 import type { DongGiao, ThanhToan } from '../../functions/src/giaoLogic'
 
 interface PhieuGiao {
@@ -109,15 +110,18 @@ function NopTien({ uid, tenToi }: { uid: string; tenToi: string }) {
 
 interface CongNo { TenKhach: string; NoTien: number; NoVo: Record<string, number>; CocVo: Record<string, number>; TienCoc: number }
 
-function CongNoKhach() {
+function CongNoKhach({ laAdmin }: { laAdmin: boolean }) {
+  const [moNhap, setMoNhap] = useState(false)
   const { ds, loi } = useNghe<CongNo>(() => collection(db, 'CongNoKhach'), [])
   const { ds: sp } = useNghe<{ Ten: string }>(() => collection(db, 'SanPham'), [])
   const ten = (id: string) => sp?.find((x) => x.id === id)?.Ten ?? id
   const coNo = (ds ?? []).filter((c) => c.NoTien !== 0 || Object.values(c.NoVo ?? {}).some((n) => n !== 0) || c.TienCoc !== 0)
     .sort((a, b) => b.NoTien - a.NoTien)
   const tong = coNo.reduce((s, c) => s + c.NoTien, 0)
+  if (moNhap) return <NhapDauKy dong={() => setMoNhap(false)} />
   return (
     <section className="the the-rong">
+      {laAdmin && <button className="nut-vien" onClick={() => setMoNhap(true)}>Nhập công nợ đầu kỳ (dán từ Excel)</button>}
       <h2>Công nợ khách ({coNo.length}) · nợ tiền {dinhDangSo(tong)}đ</h2>
       {loi && <p className="loi">{loi}</p>}
       {ds && coNo.length === 0 && <p className="ghi-chu">Chưa có khách nào nợ.</p>}
@@ -229,7 +233,7 @@ export default function KeToan({ uid, tenToi, laAdmin }: { uid: string; tenToi: 
       </div>
       {muc === 'tien' && <NopTien uid={uid} tenToi={tenToi} />}
       {muc === 'ck' && <ChuyenKhoan uid={uid} />}
-      {muc === 'no' && <CongNoKhach />}
+      {muc === 'no' && <CongNoKhach laAdmin={laAdmin} />}
       {muc === 'soat' && <SoatNgay />}
       {muc === 'tk' && laAdmin && <TaiKhoanCK />}
     </div>

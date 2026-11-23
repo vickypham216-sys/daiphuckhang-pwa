@@ -16,6 +16,7 @@ import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/
 import { kiemTraNhanVienMoi, MAT_KHAU_TOI_THIEU } from "./nhanVienLogic";
 import { docDongNhap, maNoVo, tinhNhap, tongTienNhap, type Ton } from "./khoLogic";
 import { congLenXe, docDongXuat, tinhXuat, tongTheoSanPham, type DongXuat } from "./xuatLogic";
+import { apDauKy, timKhach, type SoDauKy } from "./dauKyLogic";
 import { batBuocDem, chenhLech, cong, congNoTuPhieu, soPhaiCo, type PhieuTinh, type TheoSp } from "./ketThucLogic";
 
 initializeApp();
@@ -439,5 +440,77 @@ export const ketThucChuyen = onCall(async (req) => {
     });
     return { ChenhLech: { Day: clDay, VoRong: clVo }, TienMatPhaiNop: pc.TienMat };
   });
+  return kq;
+});
+
+// ── CÔNG NỢ ĐẦU KỲ ───────────────────────────────────────────────────────
+// Admin dán bảng từ Excel (app đã đọc thành dòng). Mỗi dòng: tìm khách (SĐT,
+// rồi tên duy nhất); không có thì TẠO khách mới. Đầu kỳ lưu riêng ở
+// CongNoKhach.DauKy và cộng vào tổng — sửa lại đầu kỳ không đè phần đã phát
+// sinh qua chuyến. Mỗi lần ghi để lại vết DieuChinhCongNo.
+
+export const nhapCongNoDauKy = onCall(async (req) => {
+  const nguoi = await batBuocVaiTro(req, ["Admin"]);
+  const vao = req.data?.Dong;
+  if (!Array.isArray(vao) || vao.length === 0) throw new HttpsError("invalid-argument", "Không có dòng nào.");
+  if (vao.length > 300) throw new HttpsError("invalid-argument", "Tối đa 300 dòng mỗi lần.");
+
+  const sp = await db().collection("SanPham").get();
+  const spVo = new Set(sp.docs.filter((d) => d.data().CoVo === true).map((d) => d.id));
+  const so = (n: unknown) => typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= 1e12;
+  const theoSp = (m: unknown): Record<string, number> => {
+    const kq: Record<string, number> = {};
+    for (const [k, v] of Object.entries((m ?? {}) as Record<string, unknown>)) {
+      if (!spVo.has(k)) throw new HttpsError("invalid-argument", "Có cột vỏ của sản phẩm không có vỏ.");
+      if (!so(v)) throw new HttpsError("invalid-argument", "Số vỏ không hợp lệ.");
+      if (v) kq[k] = v as number;
+    }
+    return kq;
+  };
+
+  const khSnap = await db().collection("KhachHang").get();
+  const dsKh: { id: string; Ten: string; SoDienThoai: string | null }[] = khSnap.docs.map((d) => ({ id: d.id, Ten: String(d.data().Ten ?? ""), SoDienThoai: (d.data().SoDienThoai as string) ?? null }));
+  const kq = { capNhat: 0, taoMoi: 0, loi: [] as { dong: number; loi: string }[] };
+  const daGhi = new Set<string>(); // một khách hai dòng → dòng sau đọc số chưa ghi của dòng trước
+
+  for (let i = 0; i < vao.length; i += 100) {
+    const lo = vao.slice(i, i + 100) as Record<string, unknown>[];
+    const batch = db().batch();
+    for (const [j, x] of lo.entries()) {
+      const stt = i + j + 1;
+      const Ten = typeof x.Ten === "string" ? x.Ten.trim().slice(0, 120) : "";
+      const sdt = typeof x.SoDienThoai === "string" && /^0\d{9}$/.test(x.SoDienThoai) ? x.SoDienThoai : null;
+      if (!Ten) { kq.loi.push({ dong: stt, loi: "Thiếu tên." }); continue; }
+      if (![x.NoTien, x.TienCoc].every(so)) { kq.loi.push({ dong: stt, loi: "Số tiền không hợp lệ." }); continue; }
+      const moi: SoDauKy = { NoTien: x.NoTien as number, NoVo: theoSp(x.NoVo), CocVo: theoSp(x.CocVo), TienCoc: x.TienCoc as number };
+
+      const tim = timKhach({ Ten, SoDienThoai: sdt }, dsKh);
+      if (tim && "nhieu" in tim) { kq.loi.push({ dong: stt, loi: `Có nhiều khách tên "${Ten}" — thêm SĐT để phân biệt.` }); continue; }
+      let khId: string;
+      if (tim) khId = tim.id;
+      else {
+        const ref = db().collection("KhachHang").doc();
+        khId = ref.id;
+        batch.set(ref, {
+          Ten, SoDienThoai: sdt, DiaChi: typeof x.DiaChi === "string" && x.DiaChi.trim() ? x.DiaChi.trim().slice(0, 300) : "(chưa có địa chỉ)",
+          GhiChu: null, TrangThai: "Active", TaoLuc: FieldValue.serverTimestamp(), TaoBoi: nguoi.uid, TaoTu: "NhapDauKy",
+        });
+        dsKh.push({ id: khId, Ten, SoDienThoai: sdt });
+        kq.taoMoi++;
+      }
+      if (daGhi.has(khId)) { kq.loi.push({ dong: stt, loi: `"${Ten}" bị lặp — gộp lại một dòng.` }); continue; }
+      daGhi.add(khId);
+      const refCn = db().collection("CongNoKhach").doc(khId);
+      const cu = (await refCn.get()).data();
+      const tong = apDauKy(cu, cu?.DauKy, moi);
+      batch.set(refCn, { KhachHangId: khId, TenKhach: Ten, ...tong, DauKy: moi, CapNhat: FieldValue.serverTimestamp() });
+      batch.set(db().collection("DieuChinhCongNo").doc(), {
+        KhachHangId: khId, TenKhach: Ten, Loai: "DauKy", Truoc: cu?.DauKy ?? null, Sau: moi,
+        Boi: nguoi.uid, TenNguoi: nguoi.HoTen, Luc: FieldValue.serverTimestamp(),
+      });
+      kq.capNhat++;
+    }
+    await batch.commit();
+  }
   return kq;
 });
