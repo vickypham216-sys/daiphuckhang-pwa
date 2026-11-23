@@ -80,8 +80,10 @@ export default function TongQuan({ vaiTro, di }: { vaiTro: string; di: DiToi }) 
   return (
     <div className="man man-rong">
       <section className="the the-rong">
-        <h2>Hôm nay · {hienNgay(homNay)}</h2>
-      </section>
+        <div>
+          <h2>Hôm nay · {hienNgay(homNay)}</h2>
+          <p className="ghi-chu">Tính từ phiếu giao đã ghi — đơn mới đặt chưa tính vào đây.</p>
+        </div>
       <div className="o-so">
         <div className="o-so-mot o-so-chinh">
           <span>Doanh thu</span>
@@ -105,10 +107,12 @@ export default function TongQuan({ vaiTro, di }: { vaiTro: string; di: DiToi }) 
         <div className="o-so-mot">
           <span>Đơn cho ngày mai</span>
           <strong>{dinhDangSo(donMai.length)}</strong>
-          {xemDon && <button className="nut-chu" onClick={() => di('donhang')}>Xem đơn ›</button>}
+          {xemDon && <button className="nut-chu nut-trong-o" onClick={() => di('donhang')}>Xem đơn ›</button>}
         </div>
       </div>
+      </section>
 
+      <div className="luoi-2">
       <section className="the the-rong">
         <h2>Cần xử lý</h2>
         {coViec ? <ul className="ds-viec">{viec}</ul> : <p className="tin-tot">✔ Không có việc nào đang chờ.</p>}
@@ -142,6 +146,7 @@ export default function TongQuan({ vaiTro, di }: { vaiTro: string; di: DiToi }) 
           })}
         </ul>
       </section>
+      </div>
     </div>
   )
 }

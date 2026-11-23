@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Icon, Logo } from './components/BieuTuong'
+import { docChuTo, ghiChuTo, useCoMang } from './lib/mang'
 import { dangNhap, dangXuat, guiEmailDatLaiMatKhau, usePhienDangNhap } from './lib/auth'
 import { DUOI_EMAIL_NOI_BO, emailDangNhap } from '../functions/src/nhanVienLogic'
 import NhanVien from './screens/NhanVien'
@@ -10,7 +12,7 @@ import ChuyenCuaToi from './screens/ChuyenCuaToi'
 import KeToan from './screens/KeToan'
 import BaoCao from './screens/BaoCao'
 import TongQuan from './screens/TongQuan'
-import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
+import { KHACH_HANG, NHA_CUNG_CAP, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
 function ManDangNhap() {
@@ -19,6 +21,7 @@ function ManDangNhap() {
   const [loi, setLoi] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)
   const [dangGui, setDangGui] = useState(false)
+  const [hienMk, setHienMk] = useState(false)
 
   async function quenMatKhau() {
     setLoi(null)
@@ -63,56 +66,86 @@ function ManDangNhap() {
   }
 
   return (
-    <main className="khung-giua">
-      <form className="the" onSubmit={gui}>
-        <h1>Đại Phúc Khang</h1>
-        <label>
-          Số điện thoại hoặc email
-          <input
-            inputMode="email"
-            autoComplete="username"
-            autoCapitalize="none"
-            value={tenDN}
-            onChange={(e) => setTenDN(e.target.value)}
-            required
-          />
-        </label>
-        <label>
-          Mật khẩu
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={matKhau}
-            onChange={(e) => setMatKhau(e.target.value)}
-            required
-          />
-        </label>
-        {loi && <p className="loi" role="alert">{loi}</p>}
-        {tin && <p className="tin-tot" role="status">{tin}</p>}
-        <button type="submit" disabled={dangGui}>
-          {dangGui ? 'Đang đăng nhập…' : 'Đăng nhập'}
-        </button>
-        <button type="button" className="nut-chu" onClick={quenMatKhau}>
-          Quên mật khẩu?
-        </button>
-      </form>
+    <main className="dn-nen">
+      <span className="dn-bong dn-bong-1" aria-hidden="true" />
+      <span className="dn-bong dn-bong-2" aria-hidden="true" />
+      <div className="dn-khung">
+        <div className="dn-gioi-thieu">
+          <div className="dn-thuong-hieu"><Logo co={34} /><span className="dn-ten">Đại Phúc Khang</span></div>
+          <h1 className="dn-hero">Nước sạch tới tận nơi, đúng giờ mỗi ngày.</h1>
+          <p className="dn-phu">Điều phối · giao hàng · kho · thu nợ — một app cho cả đội Đại Phúc Khang.</p>
+        </div>
+        <div>
+          <form className="dn-form" onSubmit={gui}>
+            <label className="dn-nhan" htmlFor="dn-ten">Số điện thoại hoặc email</label>
+            <input id="dn-ten" className="dn-o" inputMode="email" autoComplete="username" autoCapitalize="none"
+              value={tenDN} onChange={(e) => setTenDN(e.target.value)} placeholder="0901234567" required />
+            <p className="dn-goi-y">Nhân viên giao hàng dùng số điện thoại quản lý đã cấp.</p>
+            <label className="dn-nhan" htmlFor="dn-mk">Mật khẩu</label>
+            <div className="dn-o-boc">
+              <input id="dn-mk" className="dn-o" type={hienMk ? 'text' : 'password'} autoComplete="current-password"
+                value={matKhau} onChange={(e) => setMatKhau(e.target.value)} required />
+              <button type="button" className="dn-hien" onClick={() => setHienMk(!hienMk)} aria-pressed={hienMk}>{hienMk ? 'Ẩn' : 'Hiện'}</button>
+            </div>
+            {loi && <p className="dn-loi" role="alert">{loi}</p>}
+            {tin && <p className="tin-tot" role="status">{tin}</p>}
+            <button type="submit" className="dn-nut" disabled={dangGui}>{dangGui ? 'Đang vào…' : 'Vào hệ thống'}</button>
+            <button type="button" className="dn-quen" onClick={quenMatKhau}>Quên mật khẩu?</button>
+          </form>
+          <p className="dn-chan">Lần đầu cần có mạng. Sau đó app nhớ phiên đăng nhập và dùng được cả khi mất sóng.</p>
+        </div>
+      </div>
     </main>
   )
 }
 
 function ThongBao({ tieuDe, noiDung }: { tieuDe: string; noiDung: string }) {
   return (
-    <main className="khung-giua">
-      <div className="the">
-        <h1>{tieuDe}</h1>
-        <p>{noiDung}</p>
-        <button onClick={() => dangXuat()}>Đăng xuất</button>
+    <main className="dn-nen">
+      <div className="dn-khung dn-khung-hep">
+        <div className="dn-thuong-hieu"><Logo co={34} /><span className="dn-ten">Đại Phúc Khang</span></div>
+        <div className="dn-form">
+          <h1 className="dn-tb">{tieuDe}</h1>
+          <p>{noiDung}</p>
+          <button className="dn-nut" onClick={() => dangXuat()}>Đăng xuất</button>
+        </div>
       </div>
     </main>
   )
 }
 
-type Man = 'trangchu' | 'baocao' | 'ketoan' | 'chuyen' | 'kho' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+type Man = 'trangchu' | 'danhmuc' | 'ncc' | 'baocao' | 'ketoan' | 'chuyen' | 'kho' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+
+const DANH_MUC: { ma: Man; ten: string; mo: string }[] = [
+  { ma: 'khach', ten: 'Khách hàng', mo: 'Tên, SĐT, địa chỉ giao, ghi chú cho tài xế' },
+  { ma: 'sanpham', ten: 'Sản phẩm', mo: 'Đơn vị, giá bán, vỏ và tiền cọc' },
+  { ma: 'xe', ten: 'Xe', mo: 'Biển số, sức chở' },
+  { ma: 'nhanvien', ten: 'Nhân viên', mo: 'Tài khoản, vai trò, mật khẩu' },
+  { ma: 'ncc', ten: 'Nhà cung cấp', mo: 'Nơi nhập hàng, đổi vỏ' },
+]
+const ICON_DM: Record<string, string> = { khach: 'khach', sanpham: 'sanpham', xe: 'xe', nhanvien: 'nhanvien', ncc: 'ncc' }
+
+/** Menu Danh mục (Admin) — gom 5 danh mục vào một tab, như "Quản trị" bên MIA. */
+function MenuDanhMuc({ chon }: { chon: (m: Man) => void }) {
+  return (
+    <div className="man">
+      <section className="the the-rong">
+        <h2>Danh mục</h2>
+        <ul className="ds-menu">
+          {DANH_MUC.map((d) => (
+            <li key={d.ma}>
+              <button className="muc-menu" onClick={() => chon(d.ma)}>
+                <span className="muc-menu-icon"><Icon ten={ICON_DM[d.ma]} co={22} /></span>
+                <span><strong>{d.ten}</strong><small>{d.mo}</small></span>
+                <span aria-hidden="true">›</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  )
+}
 
 export default function App() {
   const phien = usePhienDangNhap()
@@ -123,9 +156,20 @@ export default function App() {
   const [mucDi, setMucDi] = useState<string | undefined>(undefined)
   const [lanDi, setLanDi] = useState(0)
   const di = (m: string, muc?: string) => { setMan(m as Man); setMucDi(muc); setLanDi((x) => x + 1); window.scrollTo(0, 0) }
-  const chonTab = (m: Man) => { setMan(m); setMucDi(undefined) }
+  const chonTab = (m: Man) => { setMan(m); setMucDi(undefined); window.scrollTo(0, 0) }
+  const coMang = useCoMang()
+  const [chuTo, setChuTo] = useState(docChuTo)
+  useEffect(() => ghiChuTo(chuTo), [chuTo])
+  // Bộ màu theo VAI TRÒ (không theo tab): tài xế "Sổ Kho", còn lại "Nhãn Chai".
+  const vaiTroHs = phien.hoSo?.VaiTro
+  useEffect(() => {
+    document.documentElement.setAttribute('data-giaodien', vaiTroHs === 'TaiXe' || vaiTroHs === 'PhuXe' ? 'taixe' : 'admin')
+  }, [vaiTroHs])
 
-  if (phien.dangTai) return <main className="khung-giua">Đang tải…</main>
+  if (phien.dangTai)
+    return (
+      <main className="dn-nen"><div className="dn-thuong-hieu dn-dang-tai" role="status"><Logo co={34} /><span className="dn-ten">Đang mở Đại Phúc Khang…</span></div></main>
+    )
   if (!phien.uid) return <ManDangNhap />
   if (phien.loiHoSo) return <ThongBao tieuDe="Không vào được app" noiDung={phien.loiHoSo} />
   if (phien.thieuHoSo || !phien.hoSo)
@@ -144,51 +188,69 @@ export default function App() {
   // người gặp khách mới. Xe, Sản phẩm (giá): chỉ Admin.
   // Tài xế / phụ xe: không có Trang chủ — mở app là vào thẳng chuyến của mình
   // (MIA: app tài xế càng ít tab càng tốt).
-  const tab: { ma: Man; ten: string }[] = [
-    ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [] : [{ ma: 'trangchu' as Man, ten: 'Tổng quan' }]),
-    ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối' }] : []),
-    ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [{ ma: 'chuyen' as Man, ten: 'Chuyến của tôi' }] : []),
-    ...(laAdmin || vaiTro === 'ThuKho' || vaiTro === 'KeToan' ? [{ ma: 'kho' as Man, ten: 'Kho' }] : []),
-    ...(laAdmin || vaiTro === 'KeToan' ? [{ ma: 'ketoan' as Man, ten: 'Kế toán' }] : []),
-    ...(laAdmin || vaiTro === 'KeToan' || vaiTro === 'ThuKho' ? [{ ma: 'baocao' as Man, ten: 'Báo cáo' }] : []),
-    ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi'
-      ? [
-          { ma: 'donhang' as Man, ten: 'Đơn hàng' },
-          { ma: 'khach' as Man, ten: 'Khách hàng' },
-        ]
-      : []),
-    ...(laAdmin
-      ? [
-          { ma: 'sanpham' as Man, ten: 'Sản phẩm' },
-          { ma: 'xe' as Man, ten: 'Xe' },
-          { ma: 'nhanvien' as Man, ten: 'Nhân viên' },
-        ]
-      : []),
+  const tab: { ma: Man; ten: string; icon: string }[] = [
+    ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [] : [{ ma: 'trangchu' as Man, ten: 'Tổng quan', icon: 'trangchu' }]),
+    ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối', icon: 'dieuphoi' }] : []),
+    ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [{ ma: 'chuyen' as Man, ten: 'Chuyến của tôi', icon: 'chuyen' }] : []),
+    ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi' ? [{ ma: 'donhang' as Man, ten: 'Đơn hàng', icon: 'donhang' }] : []),
+    ...(laAdmin || vaiTro === 'ThuKho' || vaiTro === 'KeToan' ? [{ ma: 'kho' as Man, ten: 'Kho', icon: 'kho' }] : []),
+    ...(laAdmin || vaiTro === 'KeToan' ? [{ ma: 'ketoan' as Man, ten: 'Kế toán', icon: 'ketoan' }] : []),
+    ...(laAdmin || vaiTro === 'KeToan' || vaiTro === 'ThuKho' ? [{ ma: 'baocao' as Man, ten: 'Báo cáo', icon: 'baocao' }] : []),
+    ...(vaiTro === 'Sales' || vaiTro === 'DieuPhoi' ? [{ ma: 'khach' as Man, ten: 'Khách hàng', icon: 'khach' }] : []),
+    ...(laAdmin ? [{ ma: 'danhmuc' as Man, ten: 'Danh mục', icon: 'danhmuc' }] : []),
   ]
+  // Màn con của Danh mục (Admin): không có nút riêng trên dải tab — nút "Danh
+  // mục" sáng khi đang ở đó, và có "‹ Danh mục" để quay về.
+  const conDanhMuc: Man[] = ['khach', 'sanpham', 'xe', 'nhanvien', 'ncc']
+  const trongDanhMuc = laAdmin && man != null && conDanhMuc.includes(man)
   const manMacDinh: Man = vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? 'chuyen' : 'trangchu'
-  const manHien: Man = man && tab.some((t) => t.ma === man) ? man : manMacDinh
+  const manHien: Man = man && (tab.some((t) => t.ma === man) || trongDanhMuc) ? man : manMacDinh
+  const nutSang: Man = trongDanhMuc ? 'danhmuc' : manHien
 
   return (
     <div className="app">
-      <header className="thanh-tren">
-        <strong>Đại Phúc Khang</strong>
-        <span>
-          {phien.hoSo.HoTen} · {TEN_VAI_TRO[vaiTro] ?? vaiTro}
-        </span>
-        <button className="nut-phu" onClick={() => dangXuat()}>
-          Đăng xuất
-        </button>
+      <header className="app-header">
+        <div className="app-header-row">
+          <div className="app-thuong-hieu">
+            <Logo />
+            <div>
+              <div className="app-title">Đại Phúc Khang</div>
+              <div className="app-subtitle">{phien.hoSo.HoTen} · {TEN_VAI_TRO[vaiTro] ?? vaiTro}</div>
+            </div>
+          </div>
+          <div className="app-header-phai">
+            <span className={'status-pill ' + (coMang ? 'status-online' : 'status-offline')} role="status">
+              <span className="dot" />{coMang ? 'Có mạng' : 'Mất mạng'}
+            </span>
+            <div className="dau-nut">
+              <button className={'nut-dau nut-co-chu' + (chuTo ? ' dang' : '')} onClick={() => setChuTo(!chuTo)} aria-pressed={chuTo}
+                aria-label="Chữ to" title={chuTo ? 'Đang bật chữ to — bấm để về cỡ thường' : 'Bật chữ to'}>
+                <span aria-hidden="true">A<span className="nut-co-chu-to">A</span></span>
+              </button>
+              <button className="nut-dau nut-in" onClick={() => window.print()} aria-label="In trang này">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M7 9V3h10v6" /><rect x="3" y="9" width="18" height="8" rx="1.5" /><path d="M7 14h10v7H7z" />
+                </svg>In
+              </button>
+              <button className="nut-dau" onClick={() => dangXuat()}>Đăng xuất</button>
+            </div>
+          </div>
+        </div>
       </header>
       {tab.length > 1 && (
-        <nav className="thanh-tab">
+        <nav className="tabbar" aria-label="Chức năng">
           {tab.map((t) => (
-            <button key={t.ma} className={manHien === t.ma ? 'dang-chon' : ''} onClick={() => chonTab(t.ma)}>
-              {t.ten}
+            <button key={t.ma} className={nutSang === t.ma ? 'active' : ''} aria-current={nutSang === t.ma ? 'page' : undefined} onClick={() => chonTab(t.ma)}>
+              <span className="tabbar-boc"><Icon ten={t.icon} /></span>
+              <span className="tabbar-nhan">{t.ten}</span>
             </button>
           ))}
         </nav>
       )}
-      <main className="noi-dung">
+      {trongDanhMuc && (
+        <div className="thanh-quay-lai"><button className="nut-quay-lai" onClick={() => chonTab('danhmuc')}>‹ Danh mục</button></div>
+      )}
+      <main className={'noi-dung' + (tab.length > 1 ? ' co-tabbar' : '')}>
         {manHien === 'baocao' ? (
           <BaoCao key={'bc' + lanDi} vaiTro={vaiTro} mucBanDau={mucDi} />
         ) : manHien === 'ketoan' ? (
@@ -196,7 +258,7 @@ export default function App() {
         ) : manHien === 'chuyen' ? (
           <ChuyenCuaToi uid={phien.uid} tenToi={phien.hoSo.HoTen} />
         ) : manHien === 'kho' ? (
-          <Kho key={'kho' + lanDi} uid={phien.uid} vaiTro={vaiTro} mucBanDau={mucDi} />
+          <Kho key={'kho' + lanDi} vaiTro={vaiTro} mucBanDau={mucDi} />
         ) : manHien === 'dieuphoi' ? (
           <DieuPhoi uid={phien.uid} />
         ) : manHien === 'donhang' ? (
@@ -207,6 +269,10 @@ export default function App() {
           <DanhMuc key="xe" ch={XE} uid={phien.uid} duocSua={laAdmin} />
         ) : manHien === 'sanpham' ? (
           <DanhMuc key="sp" ch={SAN_PHAM} uid={phien.uid} duocSua={laAdmin} />
+        ) : manHien === 'danhmuc' ? (
+          <MenuDanhMuc chon={chonTab} />
+        ) : manHien === 'ncc' ? (
+          <DanhMuc key="ncc" ch={NHA_CUNG_CAP} uid={phien.uid} duocSua={laAdmin} />
         ) : manHien === 'khach' ? (
           <DanhMuc key="kh" ch={KHACH_HANG} uid={phien.uid} duocSua />
         ) : (

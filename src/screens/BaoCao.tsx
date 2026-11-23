@@ -95,10 +95,7 @@ function BaoCaoDoanhThu() {
         )}
         {quaDai && <p className="loi">{ky.tu > ky.den ? 'Ngày bắt đầu sau ngày kết thúc.' : `Kỳ tối đa ${TOI_DA_NGAY} ngày — chọn ngắn lại.`}</p>}
         {loi && <p className="loi">{loi}</p>}
-      </section>
-
-      {!quaDai && (
-        <>
+        {!quaDai && (
           <div className="o-so">
             <div className="o-so-mot o-so-chinh">
               <span>Doanh thu</span>
@@ -120,6 +117,11 @@ function BaoCaoDoanhThu() {
               <small>{t.doanhThu + t.giamGia ? `= ${((t.giamGia / (t.doanhThu + t.giamGia)) * 100).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% giá gốc` : ''}</small>
             </div>
           </div>
+        )}
+      </section>
+
+      {!quaDai && (
+        <>
 
           <section className="the the-rong">
             <h2>Thu tiền trong kỳ</h2>
