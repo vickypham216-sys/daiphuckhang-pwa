@@ -523,3 +523,31 @@ Vicky: *"Làm thu nợ khách tiếp đi"*.
   cọc 1 vỏ 50k → kế toán "Không thấy" CK 100k → nợ 300k → thu văn phòng 300k
   + 1 vỏ → 0. Luật/hàm: phiếu thu sau chốt, sửa phiếu thu, sửa CK thẳng, tài xế
   gọi thu văn phòng, thu quá nợ đều bị chặn.
+
+### Báo cáo doanh thu (23/11/2026)
+
+Vicky: *"Làm báo cáo doanh thu tiếp đi. Lưu ý check UX/UI như đã làm cho app
+mia water"*.
+
+- Tab **Báo cáo** (Admin, Kế toán). Nguồn duy nhất: `PhieuGiao` (sổ gốc).
+  **Doanh thu = Σ số giao × đơn giá giao** (đã trừ giảm giá, KHÔNG gồm cọc;
+  CK "Không thấy" vẫn là doanh thu — khách chuyển sang nợ). Logic thuần
+  `src/lib/baoCao.ts` + `scripts/kiemTraBaoCao.ts` (trong verify).
+- Kỳ: Hôm nay / Hôm qua / 7 ngày / Tháng này / Tháng trước / Tuỳ chọn (tối đa
+  93 ngày — đọc thẳng phiếu, chưa có bảng tổng hợp sẵn). **So với kỳ trước**
+  cùng số ngày; "Tháng này" so với CÙNG SỐ NGÀY đầu tháng trước (bài học MIA:
+  so cả kỳ thì đầu kỳ luôn "giảm"). Tăng: xanh ▲; giảm: XÁM ▼ (không đỏ).
+- Ô số: Doanh thu · Sản lượng theo đơn vị · Lượt giao (bán tại chỗ, không
+  giao được) · Giảm giá (% giá gốc). Thu tiền: tiền mặt / CK / ghi nợ (thanh
+  tỉ lệ + bảng; dòng "trong đó cọc vỏ").
+- Biểu đồ cột (`components/BieuDoCot.tsx`) theo skill dataviz: 1 chuỗi, màu
+  `--chinh` (validate_palette PASS), cột ≤ 24px bo 4px đầu, lưới 1px, trục y
+  0/nửa/trần tròn ("2,5tr"), ≤ 7 nhãn x + nhãn cuối canh phải (bỏ nhãn quá sát
+  nhãn cuối — đã thấy chồng "21/23/11"), chạm/rê → dòng chi tiết, "Xem dạng
+  bảng". > 45 ngày thì gom theo tuần (thứ Hai). 3 màu thanh thu tiền
+  (#0f5c8c, #e07a1f, #8a5cd1) chạy validate_palette PASS.
+- Bảng: theo sản phẩm, theo xe, theo người nhận đơn (Sales — ghép DonId →
+  DonHang.TenNguoiTao; đơn tại chỗ = "Bán tại chỗ"), top 10 khách (Xem tất cả).
+- **Đo bằng máy ở 375 / 768 / 1280px** (`scratchpad bc.cjs`): tràn ngang, ô
+  bấm < 44px, chữ bị cắt. Sửa: con của lưới phải `min-width: 0` (svg + dải
+  chip đẩy thẻ tràn 11px ở 375px); số doanh thu không gãy "đ" xuống dòng.
