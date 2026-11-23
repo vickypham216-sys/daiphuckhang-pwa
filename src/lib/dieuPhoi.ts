@@ -31,6 +31,8 @@ export interface Chuyen {
   SoChuyen: number
   TaiXe: NguoiTrenXe
   PhuXe: NguoiTrenXe[]
+  /** uid tài xế + phụ xe — để luật Firestore kiểm "người này có trong tổ xe". */
+  ToXeUids?: string[]
   /** Mã đơn theo thứ tự giao. */
   DonIds: string[]
   TrangThai: TrangThaiChuyen

@@ -271,7 +271,9 @@ export const xuatKho = onCall(async (req) => {
       TaiXe: cd.TaiXe, PhuXe: cd.PhuXe ?? [], Dong: dong, GhiChu: ghiChu || null,
       TrangThai: "ChoNhan", TaoBoi: nguoi.uid, TenNguoiTao: nguoi.HoTen, TaoLuc: FieldValue.serverTimestamp(),
     });
-    tx.update(refC, { TrangThai: "DaXuatKho", SuaLuc: FieldValue.serverTimestamp(), SuaBoi: nguoi.uid });
+    // ToXeUids do MÁY CHỦ đặt lại từ TaiXe + PhuXe — luật PhieuGiao dựa vào nó.
+    const toXe = [cd.TaiXe?.uid, ...((cd.PhuXe ?? []) as { uid: string }[]).map((x) => x.uid)].filter(Boolean);
+    tx.update(refC, { TrangThai: "DaXuatKho", ToXeUids: toXe, SuaLuc: FieldValue.serverTimestamp(), SuaBoi: nguoi.uid });
   });
   return { ok: true };
 });

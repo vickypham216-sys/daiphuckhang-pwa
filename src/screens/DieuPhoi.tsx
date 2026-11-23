@@ -119,6 +119,7 @@ function FormChuyen({
         await updateDoc(doc(db, 'Chuyen', dau.id), {
           TaiXe: nguoi(taiXe),
           PhuXe: phuXe.map(nguoi),
+          ToXeUids: [taiXe, ...phuXe],
           GhiChu: ghiChu.trim() || null,
           SuaLuc: serverTimestamp(),
           SuaBoi: uid,
@@ -134,6 +135,7 @@ function FormChuyen({
           SoChuyen: so,
           TaiXe: nguoi(taiXe),
           PhuXe: phuXe.map(nguoi),
+          ToXeUids: [taiXe, ...phuXe],
           DonIds: [],
           TrangThai: 'LapKeHoach',
           GhiChu: ghiChu.trim() || null,

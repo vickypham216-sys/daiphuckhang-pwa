@@ -118,7 +118,8 @@ service cloud.firestore {
         && donHopLe(request.resource.data)
         && (request.resource.data.TrangThai == 'Moi'
             || (request.resource.data.LyDoHuy is string && request.resource.data.LyDoHuy.size() > 0)))
-        || ganHoacBoDon(id);
+        || ganHoacBoDon(id)
+        || ghiDaGiao(id);
       allow delete: if false;
     }
 
@@ -165,7 +166,7 @@ service cloud.firestore {
       allow update: if laDieuPhoi()
         && resource.data.TrangThai == 'LapKeHoach'
         && chuyenHopLe(request.resource.data)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['TaiXe', 'PhuXe', 'GhiChu', 'DonIds', 'TrangThai', 'SuaLuc', 'SuaBoi'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['TaiXe', 'PhuXe', 'ToXeUids', 'GhiChu', 'DonIds', 'TrangThai', 'SuaLuc', 'SuaBoi'])
         && (request.resource.data.TrangThai == 'LapKeHoach'
             || (request.resource.data.TrangThai == 'Huy' && request.resource.data.DonIds.size() == 0));
       allow delete: if false;
@@ -210,6 +211,66 @@ service cloud.firestore {
     match /TrenXe/{id} {
       allow read: if laNhanVien();
       allow write: if false;
+    }
+
+    // ── GIAO HÀNG ───────────────────────────────────────────────────────
+    // Tài xế / phụ xe ghi phiếu giao TRÊN ĐIỆN THOẠI, kể cả khi mất sóng
+    // (Firestore lưu tạm, có mạng thì gửi — luật được kiểm lúc gửi).
+    // PhieuGiao là SỔ GỐC, KHÔNG SỬA, KHÔNG XOÁ. Chỉ kế toán/Admin ghi được
+    // trường CK (xác nhận chuyển khoản). Công nợ, hàng trên xe: máy chủ cộng
+    // dồn ở bước kết thúc chuyến.
+    function chuyenCua(cid) {
+      return get(/databases/$(database)/documents/Chuyen/$(cid)).data;
+    }
+    function trongToXe(c) {
+      return request.auth.uid in c.get('ToXeUids', []);
+    }
+    function soTien(n) {
+      return n is int && n >= 0;
+    }
+    match /PhieuGiao/{id} {
+      allow read: if laNhanVien();
+      allow create: if laNhanVien()
+        && request.resource.data.ChuyenId is string
+        && trongToXe(chuyenCua(request.resource.data.ChuyenId))
+        && chuyenCua(request.resource.data.ChuyenId).TrangThai == 'DangGiao'
+        && request.resource.data.TaoBoi == request.auth.uid
+        && request.resource.data.Ngay == chuyenCua(request.resource.data.ChuyenId).Ngay
+        && request.resource.data.XeId == chuyenCua(request.resource.data.ChuyenId).XeId
+        && request.resource.data.Dong is list && request.resource.data.Dong.size() > 0 && request.resource.data.Dong.size() <= 30
+        && request.resource.data.Vo is list
+        && soTien(request.resource.data.TT.TienMat) && soTien(request.resource.data.TT.ChuyenKhoan) && soTien(request.resource.data.TT.GhiNo)
+        && soTien(request.resource.data.PhaiThu)
+        && request.resource.data.TT.TienMat + request.resource.data.TT.ChuyenKhoan + request.resource.data.TT.GhiNo == request.resource.data.PhaiThu
+        && ((request.resource.data.TT.ChuyenKhoan == 0 && request.resource.data.CK == null)
+            || (request.resource.data.TT.ChuyenKhoan > 0 && request.resource.data.CK.TrangThai == 'ChoXacNhan'))
+        && ((request.resource.data.TaiCho == false && request.resource.data.DonId == id
+              && get(/databases/$(database)/documents/DonHang/$(id)).data.ChuyenId == request.resource.data.ChuyenId)
+            || (request.resource.data.TaiCho == true && request.resource.data.DonId == null));
+      allow update: if vaiTro() in ['Admin', 'KeToan']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['CK'])
+        && resource.data.CK.TrangThai == 'ChoXacNhan'
+        && request.resource.data.CK.TrangThai in ['DaXacNhan', 'KhongThay']
+        && request.resource.data.CK.Boi == request.auth.uid;
+      allow delete: if false;
+    }
+    // Đơn có trong chuyến → "Đã giao" / "Không giao được", CÙNG LÚC với phiếu
+    // giao (một batch): phiếu phải có thật sau lần ghi này.
+    function ghiDaGiao(id) {
+      let moi = request.resource.data;
+      return resource.data.TrangThai == 'DaGan'
+        && moi.TrangThai in ['DaGiao', 'KhongGiao']
+        && moi.diff(resource.data).affectedKeys().hasOnly(['TrangThai', 'PhieuGiaoId', 'SuaLuc', 'SuaBoi'])
+        && moi.PhieuGiaoId == id
+        && existsAfter(/databases/$(database)/documents/PhieuGiao/$(id))
+        && trongToXe(chuyenCua(resource.data.ChuyenId));
+    }
+
+    // Tài khoản nhận chuyển khoản (để dựng mã QR). Không phải bí mật — in
+    // trên QR khách nào cũng thấy. Chỉ Admin sửa.
+    match /CaiDat/{id} {
+      allow read: if laNhanVien();
+      allow write: if laAdmin();
     }
   }
 }

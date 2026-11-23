@@ -7,6 +7,7 @@ import DonHang from './screens/DonHang'
 import DieuPhoi from './screens/DieuPhoi'
 import Kho from './screens/Kho'
 import ChuyenCuaToi from './screens/ChuyenCuaToi'
+import KeToan from './screens/KeToan'
 import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
@@ -109,7 +110,7 @@ function ThongBao({ tieuDe, noiDung }: { tieuDe: string; noiDung: string }) {
   )
 }
 
-type Man = 'trangchu' | 'chuyen' | 'kho' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
+type Man = 'trangchu' | 'ketoan' | 'chuyen' | 'kho' | 'dieuphoi' | 'donhang' | 'khach' | 'sanpham' | 'xe' | 'nhanvien'
 
 export default function App() {
   const phien = usePhienDangNhap()
@@ -138,6 +139,7 @@ export default function App() {
     ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối' }] : []),
     ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [{ ma: 'chuyen' as Man, ten: 'Chuyến của tôi' }] : []),
     ...(laAdmin || vaiTro === 'ThuKho' || vaiTro === 'KeToan' ? [{ ma: 'kho' as Man, ten: 'Kho' }] : []),
+    ...(laAdmin || vaiTro === 'KeToan' ? [{ ma: 'ketoan' as Man, ten: 'Kế toán' }] : []),
     ...(laAdmin || vaiTro === 'Sales' || vaiTro === 'DieuPhoi'
       ? [
           { ma: 'donhang' as Man, ten: 'Đơn hàng' },
@@ -176,8 +178,10 @@ export default function App() {
         </nav>
       )}
       <main className="noi-dung">
-        {manHien === 'chuyen' ? (
-          <ChuyenCuaToi uid={phien.uid} />
+        {manHien === 'ketoan' ? (
+          <KeToan uid={phien.uid} laAdmin={laAdmin} />
+        ) : manHien === 'chuyen' ? (
+          <ChuyenCuaToi uid={phien.uid} tenToi={phien.hoSo.HoTen} />
         ) : manHien === 'kho' ? (
           <Kho uid={phien.uid} vaiTro={vaiTro} />
         ) : manHien === 'dieuphoi' ? (
