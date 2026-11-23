@@ -96,7 +96,7 @@ function TheChuyen({ c, don, sanPham, ton, baoTin, chuyenNgay }: {
   return (
     <section className="the the-rong chuyen">
       <div className="chuyen-dau">
-        <h2>{c.BienSo} · Chuyến {c.SoChuyen}</h2>
+        <h2>{c.BienSo} · Chuyến {c.SoChuyen}{c.Ngay !== ngayVN() && <small className="ghi-chu"> · {hienNgay(c.Ngay)}</small>}</h2>
         <span className={'nhan-tt ' + (c.TrangThai === 'LapKeHoach' || c.TrangThai === 'VeKho' ? 'tt-Moi' : c.TrangThai === 'DaXuatKho' ? 'tt-DaGan' : 'tt-DaGiao')}>
           {c.TrangThai === 'DaXuatKho' ? 'Chờ tài xế nhận' : TEN_TRANG_THAI_CHUYEN[c.TrangThai]}
         </span>
@@ -143,7 +143,13 @@ export default function XuatKho({ sanPham, ton }: { sanPham: CoId<BanGhi>[]; ton
   const [tin, setTin] = useState<string | null>(null)
   const { ds: chuyen, loi } = useNghe<Chuyen>(() => query(collection(db, 'Chuyen'), where('Ngay', '==', ngay)), [ngay])
   const { ds: don } = useNghe<DonHang>(() => query(collection(db, 'DonHang'), where('NgayGiao', '==', ngay)), [ngay])
-  const ds = (chuyen ?? []).filter((c) => c.TrangThai !== 'Huy').sort((a, b) => a.BienSo.localeCompare(b.BienSo) || a.SoChuyen - b.SoChuyen)
+  // Xe về chờ chốt của NGÀY KHÁC (quên chốt hôm qua) vẫn phải hiện ở đây —
+  // Tổng quan trỏ tới màn này, không thấy thì không ai chốt.
+  const { ds: veKhoCu } = useNghe<Chuyen>(() => query(collection(db, 'Chuyen'), where('TrangThai', '==', 'VeKho')), [])
+  const ds = [
+    ...(veKhoCu ?? []).filter((c) => c.Ngay !== ngay).sort((a, b) => (a.Ngay < b.Ngay ? -1 : 1)),
+    ...(chuyen ?? []).filter((c) => c.TrangThai !== 'Huy').sort((a, b) => a.BienSo.localeCompare(b.BienSo) || a.SoChuyen - b.SoChuyen),
+  ]
   return (
     <>
       <section className="the the-rong">

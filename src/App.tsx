@@ -9,6 +9,7 @@ import Kho from './screens/Kho'
 import ChuyenCuaToi from './screens/ChuyenCuaToi'
 import KeToan from './screens/KeToan'
 import BaoCao from './screens/BaoCao'
+import TongQuan from './screens/TongQuan'
 import { KHACH_HANG, SAN_PHAM, XE } from './screens/cauHinhDanhMuc'
 import { TEN_VAI_TRO } from './types'
 
@@ -117,6 +118,12 @@ export default function App() {
   const phien = usePhienDangNhap()
   // null = chưa bấm tab nào → mở màn mặc định theo vai trò.
   const [man, setMan] = useState<Man | null>(null)
+  // "Chỉ đường" từ Tổng quan: mở tab + mục con. `lanDi` đổi key để màn gắn lại
+  // với mục mới (kể cả khi đang đứng sẵn ở tab đó).
+  const [mucDi, setMucDi] = useState<string | undefined>(undefined)
+  const [lanDi, setLanDi] = useState(0)
+  const di = (m: string, muc?: string) => { setMan(m as Man); setMucDi(muc); setLanDi((x) => x + 1); window.scrollTo(0, 0) }
+  const chonTab = (m: Man) => { setMan(m); setMucDi(undefined) }
 
   if (phien.dangTai) return <main className="khung-giua">Đang tải…</main>
   if (!phien.uid) return <ManDangNhap />
@@ -135,8 +142,10 @@ export default function App() {
   const laAdmin = vaiTro === 'Admin'
   // Tab theo vai trò. Khách hàng: Sales, Điều phối cũng thêm/sửa được — họ là
   // người gặp khách mới. Xe, Sản phẩm (giá): chỉ Admin.
+  // Tài xế / phụ xe: không có Trang chủ — mở app là vào thẳng chuyến của mình
+  // (MIA: app tài xế càng ít tab càng tốt).
   const tab: { ma: Man; ten: string }[] = [
-    { ma: 'trangchu', ten: 'Trang chủ' },
+    ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [] : [{ ma: 'trangchu' as Man, ten: 'Tổng quan' }]),
     ...(laAdmin || vaiTro === 'DieuPhoi' ? [{ ma: 'dieuphoi' as Man, ten: 'Điều phối' }] : []),
     ...(vaiTro === 'TaiXe' || vaiTro === 'PhuXe' ? [{ ma: 'chuyen' as Man, ten: 'Chuyến của tôi' }] : []),
     ...(laAdmin || vaiTro === 'ThuKho' || vaiTro === 'KeToan' ? [{ ma: 'kho' as Man, ten: 'Kho' }] : []),
@@ -173,7 +182,7 @@ export default function App() {
       {tab.length > 1 && (
         <nav className="thanh-tab">
           {tab.map((t) => (
-            <button key={t.ma} className={manHien === t.ma ? 'dang-chon' : ''} onClick={() => setMan(t.ma)}>
+            <button key={t.ma} className={manHien === t.ma ? 'dang-chon' : ''} onClick={() => chonTab(t.ma)}>
               {t.ten}
             </button>
           ))}
@@ -181,13 +190,13 @@ export default function App() {
       )}
       <main className="noi-dung">
         {manHien === 'baocao' ? (
-          <BaoCao vaiTro={vaiTro} />
+          <BaoCao key={'bc' + lanDi} vaiTro={vaiTro} mucBanDau={mucDi} />
         ) : manHien === 'ketoan' ? (
-          <KeToan uid={phien.uid} tenToi={phien.hoSo.HoTen} laAdmin={laAdmin} />
+          <KeToan key={'kt' + lanDi} uid={phien.uid} tenToi={phien.hoSo.HoTen} laAdmin={laAdmin} mucBanDau={mucDi} />
         ) : manHien === 'chuyen' ? (
           <ChuyenCuaToi uid={phien.uid} tenToi={phien.hoSo.HoTen} />
         ) : manHien === 'kho' ? (
-          <Kho uid={phien.uid} vaiTro={vaiTro} />
+          <Kho key={'kho' + lanDi} uid={phien.uid} vaiTro={vaiTro} mucBanDau={mucDi} />
         ) : manHien === 'dieuphoi' ? (
           <DieuPhoi uid={phien.uid} />
         ) : manHien === 'donhang' ? (
@@ -201,7 +210,7 @@ export default function App() {
         ) : manHien === 'khach' ? (
           <DanhMuc key="kh" ch={KHACH_HANG} uid={phien.uid} duocSua />
         ) : (
-          <p>Khung app đã chạy. Các màn Điều phối, Xuất kho, Giao hàng sẽ được thêm vào đây.</p>
+          <TongQuan vaiTro={vaiTro} di={di} />
         )}
       </main>
     </div>
