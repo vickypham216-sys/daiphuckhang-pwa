@@ -17,6 +17,7 @@ import { kiemTraNhanVienMoi, MAT_KHAU_TOI_THIEU } from "./nhanVienLogic";
 import { docDongNhap, maNoVo, tinhNhap, tongTienNhap, type Ton } from "./khoLogic";
 import { congLenXe, docDongXuat, tinhXuat, tongTheoSanPham, type DongXuat } from "./xuatLogic";
 import { apDauKy, timKhach, type SoDauKy } from "./dauKyLogic";
+import { apPhieuThu, kiemTraPhieuThu, tacDongChuyen, type CongNo, type PhieuThuSo } from "./thuNoLogic";
 import { batBuocDem, chenhLech, cong, congNoTuPhieu, soPhaiCo, type PhieuTinh, type TheoSp } from "./ketThucLogic";
 
 initializeApp();
@@ -389,13 +390,26 @@ export const ketThucChuyen = onCall(async (req) => {
     const thieuPhieu = ((cd.DonIds ?? []) as string[]).filter((id) => !coPhieu.has(id));
     if (thieuPhieu.length) throw new HttpsError("failed-precondition", `Còn ${thieuPhieu.length} đơn chưa có phiếu giao trên máy chủ (có thể máy tài xế chưa gửi). Nhờ tài xế mở app khi có mạng.`);
 
+    // Phiếu thu nợ tài xế thu trên chuyến: tiền mặt (trừ hoàn cọc) vào số phải
+    // nộp, vỏ khách trả vào số vỏ phải có trên xe, áp vào công nợ.
+    const thuSnap = await tx.get(db().collection("PhieuThu").where("ChuyenId", "==", chuyenId));
+    const phieuThu = thuSnap.docs.filter((x) => x.data().DaGhiSo !== true);
+
     const refXe = db().collection("TrenXe").doc(String(cd.XeId));
     const xe = (await tx.get(refXe)).data() ?? {};
     const pc = soPhaiCo(xe, phieu);
+    for (const t of phieuThu) {
+      const td = tacDongChuyen(t.data() as PhieuThuSo);
+      pc.TienMat += td.TienMat;
+      pc.VoRong = cong(pc.VoRong, td.VoRong);
+    }
     const dDay = demDay ?? pc.Day, dVo = demVo ?? pc.VoRong;
     const clDay = chenhLech(pc.Day, dDay), clVo = chenhLech(pc.VoRong, dVo);
 
     const cn = congNoTuPhieu(phieu, (p, sp) => p.Dong.find((d) => d.SanPhamId === sp)?.SoLuong ?? 0);
+    const khThu = phieuThu.map((t) => String(t.data().KhachHangId));
+    for (const [i, id] of khThu.entries())
+      cn[id] ??= { TenKhach: String(phieuThu[i].data().TenKhach ?? ""), NoTien: 0, NoVo: {}, CocVo: {}, TienCoc: 0 };
     const refCn = Object.keys(cn).map((id) => db().collection("CongNoKhach").doc(id));
     const snapCn = await Promise.all(refCn.map((r) => tx.get(r)));
     const spIds = [...new Set([...Object.keys(dDay), ...Object.keys(dVo)])].filter((k) => (dDay[k] ?? 0) > 0 || (dVo[k] ?? 0) > 0);
@@ -416,15 +430,16 @@ export const ketThucChuyen = onCall(async (req) => {
     }
     Object.entries(cn).forEach(([id, them], i) => {
       const cu = snapCn[i].data() ?? {};
-      tx.set(refCn[i], {
-        KhachHangId: id, TenKhach: them.TenKhach,
+      let moi: CongNo = {
         NoTien: (cu.NoTien ?? 0) + them.NoTien,
         NoVo: cong(cu.NoVo, them.NoVo),
         CocVo: cong(cu.CocVo, them.CocVo),
         TienCoc: (cu.TienCoc ?? 0) + them.TienCoc,
-        CapNhat: FieldValue.serverTimestamp(),
-      });
+      };
+      for (const t of phieuThu) if (t.data().KhachHangId === id) moi = apPhieuThu(moi, t.data() as PhieuThuSo);
+      tx.set(refCn[i], { ...cu, KhachHangId: id, TenKhach: them.TenKhach || cu.TenKhach, ...moi, CapNhat: FieldValue.serverTimestamp() });
     });
+    for (const t of phieuThu) tx.update(t.ref, { DaGhiSo: true, GhiSoLuc: FieldValue.serverTimestamp() });
     const doiSoat = {
       ChuyenId: chuyenId, Ngay: cd.Ngay, BienSo: cd.BienSo, SoChuyen: cd.SoChuyen, TaiXe: cd.TaiXe, PhuXe: cd.PhuXe ?? [],
       PhaiCo: { Day: pc.Day, VoRong: pc.VoRong }, Dem: phaiDem || demDay ? { Day: dDay, VoRong: dVo } : null,
@@ -513,4 +528,66 @@ export const nhapCongNoDauKy = onCall(async (req) => {
     await batch.commit();
   }
   return kq;
+});
+
+// ── THU NỢ ───────────────────────────────────────────────────────────────
+
+/** Kế toán / Admin thu nợ tại văn phòng — áp vào công nợ ngay. */
+export const thuNoVanPhong = onCall(async (req) => {
+  const nguoi = await batBuocVaiTro(req, ["Admin", "KeToan"]);
+  const khId = req.data?.KhachHangId;
+  if (typeof khId !== "string" || !khId) throw new HttpsError("invalid-argument", "Thiếu khách.");
+  const p: PhieuThuSo = {
+    TienMat: req.data?.TienMat ?? 0, ChuyenKhoan: req.data?.ChuyenKhoan ?? 0,
+    TraVo: req.data?.TraVo ?? {}, HoanCocVo: req.data?.HoanCocVo ?? {}, TienHoanCoc: req.data?.TienHoanCoc ?? 0,
+  };
+  const ghiChu = typeof req.data?.GhiChu === "string" ? req.data.GhiChu.trim().slice(0, 300) : "";
+  const ref = db().collection("PhieuThu").doc();
+  await db().runTransaction(async (tx) => {
+    const refCn = db().collection("CongNoKhach").doc(khId);
+    const [cn, sp] = await Promise.all([tx.get(refCn), tx.get(db().collection("SanPham"))]);
+    const giaCoc = Object.fromEntries(sp.docs.map((d) => [d.id, Number(d.data().GiaCocVo ?? 0)]));
+    const no = cn.data() as CongNo | undefined;
+    const loi = kiemTraPhieuThu(p, no ?? null, giaCoc);
+    if (loi) throw new HttpsError("failed-precondition", loi);
+    tx.set(ref, {
+      ...p, KhachHangId: khId, TenKhach: cn.data()?.TenKhach ?? "", Nguon: "VanPhong", ChuyenId: null,
+      // Kế toán nhận CK tại văn phòng là đã thấy tiền.
+      CK: p.ChuyenKhoan > 0 ? { TrangThai: "DaXacNhan", Boi: nguoi.uid } : null,
+      DaGhiSo: true, GhiChu: ghiChu || null,
+      TaoBoi: nguoi.uid, TenNguoiTao: nguoi.HoTen, TaoLuc: FieldValue.serverTimestamp(),
+    });
+    // Ghi đè cả document (giữ DauKy, tên…): map NoVo/CocVo phải mất khoá về 0.
+    tx.set(refCn, { ...(cn.data() ?? {}), KhachHangId: khId, ...apPhieuThu(no, p), CapNhat: FieldValue.serverTimestamp() });
+  });
+  return { id: ref.id };
+});
+
+/**
+ * Kế toán xác nhận một khoản chuyển khoản (phiếu giao hoặc phiếu thu).
+ * "Không thấy" → cộng lại số đó vào nợ của khách (khách vẫn còn nợ). Khách lẻ
+ * (không có trong danh sách) → chỉ đánh dấu, Admin xử lý.
+ */
+export const xacNhanCK = onCall(async (req) => {
+  const nguoi = await batBuocVaiTro(req, ["Admin", "KeToan"]);
+  const loai = req.data?.Loai;
+  const id = req.data?.Id;
+  const thay = req.data?.Thay === true;
+  if (!["PhieuGiao", "PhieuThu"].includes(loai) || typeof id !== "string" || !id) throw new HttpsError("invalid-argument", "Thiếu phiếu.");
+  await db().runTransaction(async (tx) => {
+    const ref = db().collection(loai).doc(id);
+    const p = await tx.get(ref);
+    if (!p.exists) throw new HttpsError("not-found", "Không tìm thấy phiếu.");
+    const d = p.data()!;
+    if (d.CK?.TrangThai !== "ChoXacNhan") throw new HttpsError("failed-precondition", "Khoản này đã được xác nhận rồi.");
+    const soTien: number = loai === "PhieuGiao" ? d.TT?.ChuyenKhoan ?? 0 : d.ChuyenKhoan ?? 0;
+    const khId: string | null = d.KhachHangId ?? null;
+    const refCn = khId ? db().collection("CongNoKhach").doc(khId) : null;
+    const cn = refCn && !thay ? await tx.get(refCn) : null;
+    tx.update(ref, { CK: { ...d.CK, TrangThai: thay ? "DaXacNhan" : "KhongThay", Boi: nguoi.uid, TenNguoi: nguoi.HoTen, Luc: FieldValue.serverTimestamp() } });
+    if (!thay && refCn) {
+      tx.set(refCn, { KhachHangId: khId, TenKhach: cn?.data()?.TenKhach ?? d.TenKhach ?? "", NoTien: (cn?.data()?.NoTien ?? 0) + soTien, CapNhat: FieldValue.serverTimestamp() }, { merge: true });
+    }
+  });
+  return { ok: true };
 });

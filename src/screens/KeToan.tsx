@@ -13,6 +13,9 @@ import type { Chuyen } from '../lib/dieuPhoi'
 import { docSo } from '../lib/so'
 import MaQR from '../components/MaQR'
 import NhapDauKy from './NhapDauKy'
+import FormThuNo from './ThuNo'
+import { goi, loiMayChu } from '../lib/goiMayChu'
+import type { BanGhi } from './DanhMuc'
 import type { DongGiao, ThanhToan } from '../../functions/src/giaoLogic'
 
 interface PhieuGiao {
@@ -29,34 +32,45 @@ const NGAN_HANG: { bin: string; ten: string }[] = [
   { bin: '970431', ten: 'Eximbank' }, { bin: '970426', ten: 'MSB' }, { bin: '970454', ten: 'VietCapital Bank' },
 ]
 
-function ChuyenKhoan({ uid }: { uid: string }) {
-  const { ds, loi } = useNghe<PhieuGiao>(() => query(collection(db, 'PhieuGiao'), where('CK.TrangThai', '==', 'ChoXacNhan')), [])
+interface KhoanCK { id: string; Loai: 'PhieuGiao' | 'PhieuThu'; Ngay: string; BienSo: string; SoChuyen: number; TenKhach: string; SoTien: number; NoiDung?: string; TenNguoiTao: string }
+
+function ChuyenKhoan() {
+  const { ds: dsGiao, loi } = useNghe<PhieuGiao>(() => query(collection(db, 'PhieuGiao'), where('CK.TrangThai', '==', 'ChoXacNhan')), [])
+  const { ds: dsThu } = useNghe<{ Ngay: string; BienSo: string; SoChuyen: number; TenKhach: string; ChuyenKhoan: number; CK: { NoiDung?: string }; TenNguoiTao: string }>(
+    () => query(collection(db, 'PhieuThu'), where('CK.TrangThai', '==', 'ChoXacNhan')), [])
   const [loiGhi, setLoiGhi] = useState<string | null>(null)
-  async function xacNhan(id: string, p: PhieuGiao, thay: boolean) {
-    if (!thay && !confirm(`Không thấy ${dinhDangSo(p.TT.ChuyenKhoan)}đ của ${p.TenKhach} trong sao kê? Khoản này sẽ được báo để xử lý.`)) return
+  const [ban, setBan] = useState(false)
+  async function xacNhan(p: KhoanCK, thay: boolean) {
+    if (!thay && !confirm(`Không thấy ${dinhDangSo(p.SoTien)}đ của ${p.TenKhach} trong sao kê? Số này sẽ được CỘNG LẠI vào nợ của khách.`)) return
     setLoiGhi(null)
+    setBan(true)
     try {
-      await updateDoc(doc(db, 'PhieuGiao', id), { CK: { ...p.CK, TrangThai: thay ? 'DaXacNhan' : 'KhongThay', Boi: uid, Luc: serverTimestamp() } })
+      await goi('xacNhanCK', { Loai: p.Loai, Id: p.id, Thay: thay })
     } catch (e) {
-      setLoiGhi(String(e))
+      setLoiGhi(loiMayChu(e))
+    } finally {
+      setBan(false)
     }
   }
-  const dsSx = (ds ?? []).slice().sort((a, b) => (a.Ngay < b.Ngay ? -1 : 1))
+  const dsSx: KhoanCK[] = [
+    ...(dsGiao ?? []).map((p) => ({ id: p.id, Loai: 'PhieuGiao' as const, Ngay: p.Ngay, BienSo: p.BienSo, SoChuyen: p.SoChuyen, TenKhach: p.TenKhach, SoTien: p.TT.ChuyenKhoan, NoiDung: p.CK?.NoiDung, TenNguoiTao: p.TenNguoiTao })),
+    ...(dsThu ?? []).map((p) => ({ id: p.id, Loai: 'PhieuThu' as const, Ngay: p.Ngay, BienSo: p.BienSo, SoChuyen: p.SoChuyen, TenKhach: p.TenKhach + ' (thu nợ)', SoTien: p.ChuyenKhoan, NoiDung: p.CK?.NoiDung, TenNguoiTao: p.TenNguoiTao })),
+  ].sort((a, b) => (a.Ngay < b.Ngay ? -1 : 1))
   return (
     <section className="the the-rong">
       <h2>Chuyển khoản chờ xác nhận ({dsSx.length})</h2>
       {loi && <p className="loi">{loi}</p>}
       {loiGhi && <p className="loi">{loiGhi}</p>}
-      {ds && dsSx.length === 0 && <p className="ghi-chu">Không có khoản nào chờ.</p>}
+      {dsGiao && dsSx.length === 0 && <p className="ghi-chu">Không có khoản nào chờ.</p>}
       <ul className="ds-nv">
         {dsSx.map((p) => (
           <li key={p.id} className="dong-nv">
             <div className="dong-nv-than">
-              <div className="chuyen-dau"><strong>{p.TenKhach}</strong><strong>{dinhDangSo(p.TT.ChuyenKhoan)}đ</strong></div>
-              <p className="ghi-chu">{hienNgay(p.Ngay)} · {p.BienSo} C{p.SoChuyen} · {p.TenNguoiTao}<br />Nội dung CK: {p.CK?.NoiDung}</p>
+              <div className="chuyen-dau"><strong>{p.TenKhach}</strong><strong>{dinhDangSo(p.SoTien)}đ</strong></div>
+              <p className="ghi-chu">{hienNgay(p.Ngay)} · {p.BienSo} C{p.SoChuyen} · {p.TenNguoiTao}<br />Nội dung CK: {p.NoiDung}</p>
               <div className="hang-nut">
-                <button onClick={() => xacNhan(p.id, p, true)}>✔ Đã thấy tiền</button>
-                <button className="nut-nguy" onClick={() => xacNhan(p.id, p, false)}>Không thấy</button>
+                <button disabled={ban} onClick={() => xacNhan(p, true)}>✔ Đã thấy tiền</button>
+                <button disabled={ban} className="nut-nguy" onClick={() => xacNhan(p, false)}>Không thấy</button>
               </div>
             </div>
           </li>
@@ -110,8 +124,12 @@ function NopTien({ uid, tenToi }: { uid: string; tenToi: string }) {
 
 interface CongNo { TenKhach: string; NoTien: number; NoVo: Record<string, number>; CocVo: Record<string, number>; TienCoc: number }
 
-function CongNoKhach({ laAdmin }: { laAdmin: boolean }) {
+function CongNoKhach({ laAdmin, uid, tenToi }: { laAdmin: boolean; uid: string; tenToi: string }) {
   const [moNhap, setMoNhap] = useState(false)
+  const [thu, setThu] = useState<string | null>(null)
+  const [tin, setTin] = useState<string | null>(null)
+  const { ds: kh } = useNghe<BanGhi>(() => collection(db, 'KhachHang'), [])
+  const { ds: spDu } = useNghe<BanGhi>(() => collection(db, 'SanPham'), [])
   const { ds, loi } = useNghe<CongNo>(() => collection(db, 'CongNoKhach'), [])
   const { ds: sp } = useNghe<{ Ten: string }>(() => collection(db, 'SanPham'), [])
   const ten = (id: string) => sp?.find((x) => x.id === id)?.Ten ?? id
@@ -119,9 +137,20 @@ function CongNoKhach({ laAdmin }: { laAdmin: boolean }) {
     .sort((a, b) => b.NoTien - a.NoTien)
   const tong = coNo.reduce((s, c) => s + c.NoTien, 0)
   if (moNhap) return <NhapDauKy dong={() => setMoNhap(false)} />
+  if (thu)
+    return (
+      <section className="the the-rong">
+        <FormThuNo uid={uid} tenToi={tenToi} khach={kh ?? []} sanPham={(spDu ?? []).filter((x) => x.TrangThai !== 'Inactive')}
+          khachId={thu === 'moi' ? undefined : thu} xong={(t) => { setTin(t); setThu(null) }} huy={() => setThu(null)} />
+      </section>
+    )
   return (
     <section className="the the-rong">
-      {laAdmin && <button className="nut-vien" onClick={() => setMoNhap(true)}>Nhập công nợ đầu kỳ (dán từ Excel)</button>}
+      {tin && <p className="tin-tot">{tin}</p>}
+      <div className="hang-nut">
+        <button onClick={() => { setThu('moi'); setTin(null) }}>+ Thu nợ</button>
+        {laAdmin && <button className="nut-vien" onClick={() => setMoNhap(true)}>Nhập đầu kỳ (Excel)</button>}
+      </div>
       <h2>Công nợ khách ({coNo.length}) · nợ tiền {dinhDangSo(tong)}đ</h2>
       {loi && <p className="loi">{loi}</p>}
       {ds && coNo.length === 0 && <p className="ghi-chu">Chưa có khách nào nợ.</p>}
@@ -129,7 +158,7 @@ function CongNoKhach({ laAdmin }: { laAdmin: boolean }) {
         <thead><tr><th>Khách</th><th>Nợ tiền</th><th>Nợ vỏ</th><th>Cọc</th></tr></thead>
         <tbody>
           {coNo.map((c) => (
-            <tr key={c.id}>
+            <tr key={c.id} className="bam-duoc" onClick={() => { setThu(c.id); setTin(null) }}>
               <td>{c.TenKhach}</td>
               <td>{dinhDangSo(c.NoTien)}</td>
               <td>{Object.entries(c.NoVo ?? {}).filter(([, n]) => n).map(([k, n]) => `${n} ${ten(k)}`).join(', ') || '—'}</td>
@@ -138,7 +167,7 @@ function CongNoKhach({ laAdmin }: { laAdmin: boolean }) {
           ))}
         </tbody>
       </table>
-      <p className="ghi-chu">Số được cộng khi thủ kho chốt chuyến. Nợ vỏ âm = công ty đang giữ dư vỏ của khách. Thu nợ: bước sau.</p>
+      <p className="ghi-chu">Số được cộng khi thủ kho chốt chuyến. Nợ vỏ âm = công ty đang giữ dư vỏ của khách. Bấm vào một dòng để thu nợ khách đó.</p>
     </section>
   )
 }
@@ -232,8 +261,8 @@ export default function KeToan({ uid, tenToi, laAdmin }: { uid: string; tenToi: 
         {laAdmin && <button className={muc === 'tk' ? '' : 'nut-vien'} onClick={() => setMuc('tk')}>Tài khoản nhận CK</button>}
       </div>
       {muc === 'tien' && <NopTien uid={uid} tenToi={tenToi} />}
-      {muc === 'ck' && <ChuyenKhoan uid={uid} />}
-      {muc === 'no' && <CongNoKhach laAdmin={laAdmin} />}
+      {muc === 'ck' && <ChuyenKhoan />}
+      {muc === 'no' && <CongNoKhach laAdmin={laAdmin} uid={uid} tenToi={tenToi} />}
       {muc === 'soat' && <SoatNgay />}
       {muc === 'tk' && laAdmin && <TaiKhoanCK />}
     </div>

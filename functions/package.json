@@ -5,7 +5,7 @@
   "engines": { "node": "22" },
   "scripts": {
     "build": "tsc",
-    "test": "tsc --noEmit && tsx src/nhanVienLogic.test.ts && tsx src/khoLogic.test.ts && tsx src/xuatLogic.test.ts && tsx src/giaoLogic.test.ts && tsx src/ketThucLogic.test.ts && tsx src/dauKyLogic.test.ts"
+    "test": "tsc --noEmit && tsx src/nhanVienLogic.test.ts && tsx src/khoLogic.test.ts && tsx src/xuatLogic.test.ts && tsx src/giaoLogic.test.ts && tsx src/ketThucLogic.test.ts && tsx src/dauKyLogic.test.ts && tsx src/thuNoLogic.test.ts"
   },
   "dependencies": {
     "firebase-admin": "^13.6.0",
