@@ -247,7 +247,7 @@ export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }
     )
   }, [ngay])
 
-  const thuTu: Record<string, number> = { Moi: 0, DaGan: 1, DaGiao: 2, Huy: 3 }
+  const thuTu: Record<string, number> = { Moi: 0, DaGan: 1, DaGiao: 2, KhongGiao: 3, Huy: 4 }
   const hien = (ds ?? []).slice().sort((a, b) => thuTu[a.TrangThai] - thuTu[b.TrangThai] || a.TenKhach.localeCompare(b.TenKhach, 'vi'))
   const conHieuLuc = hien.filter((d) => d.TrangThai !== 'Huy')
   // Tổng số lượng theo sản phẩm — điều phối nhìn để biết cần bao nhiêu hàng.

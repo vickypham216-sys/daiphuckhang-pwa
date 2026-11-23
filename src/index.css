@@ -135,6 +135,7 @@ textarea { resize: vertical; }
 .tt-Moi { background: #fef0c7; color: #7a2e0e; }
 .tt-DaGan { background: #d1e9ff; color: #194185; }
 .tt-DaGiao { background: #d1fadf; color: #05603a; }
+.tt-KhongGiao { background: #fee4e2; color: var(--loi); }
 .tt-Huy { background: #fee4e2; color: var(--loi); }
 
 .bang-chi-tiet { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
@@ -180,3 +181,25 @@ h3 { margin: 4px 0 0; font-size: 1rem; }
 .bang-xuat-dong input { padding: 10px 6px; text-align: right; min-width: 0; }
 .bang-to { font-size: 1.1rem; }
 .nut-to { min-height: 56px; font-size: 1.1rem; background: #067647; }
+
+.form-giao { display: grid; gap: 12px; margin-top: 8px; padding: 12px; border: 2px solid var(--chinh); border-radius: 10px; background: #fff; clear: both; }
+.bang-giao { display: grid; gap: 6px; }
+.bang-giao-dau, .bang-giao-dong { display: grid; grid-template-columns: 1fr 64px 92px; gap: 6px; align-items: center; }
+.bang-giao-dau { font-size: 0.8rem; color: var(--chu-phu); }
+.bang-giao-dong small { display: block; color: var(--chu-phu); font-size: 0.78rem; }
+.bang-giao-dong input { padding: 12px 6px; text-align: right; min-width: 0; font-size: 1.05rem; }
+.khoi-vo, .khoi-tien { display: grid; gap: 8px; border-top: 1px solid var(--vien); padding-top: 8px; }
+.dong-vo { display: grid; gap: 6px; }
+.bang-chia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bang-chia input { min-width: 0; text-align: right; }
+.bang-chia p { grid-column: 1 / -1; }
+.ma-qr { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.ma-qr > div { width: 220px; height: 220px; background: #fff; }
+.ma-qr svg { width: 100%; height: 100%; }
+.ma-qr p { margin: 0; }
+.ds-don-chuyen li.da-giao > span:first-child { opacity: 0.75; }
+.nut-giao { float: right; min-height: 44px; padding: 8px 18px; }
+.chu-tot { color: #067647 !important; font-weight: 600; }
+.chu-loi { color: var(--loi) !important; font-weight: 600; }
+.dong-soat { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--vien); }
+.dong-soat small { color: var(--chu-phu); }

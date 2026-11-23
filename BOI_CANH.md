@@ -404,3 +404,38 @@ Vicky: *"Có, tài xế bấm đã nhận đủ hàng"*.
   **kế toán đối chiếu sao kê rồi bấm xác nhận**. Cần số tài khoản công ty.
 - **Khách nhận ít hơn đơn: cho sửa số giao, bắt buộc lý do.** Hàng không giao
   vẫn nằm trên xe, cuối chuyến đếm lại.
+
+### Bước 3: Giao hàng + Kế toán (23/11/2026)
+
+Vicky: *"Không giới hạn, mỗi tối Admin soát danh sách giảm giá"*.
+
+- **Chuyến của tôi → nút "Giao"** trên từng khách (chuyến `DangGiao`). Form:
+  số giao + đơn giá (mặc định theo đơn), "Không giao được", lý do giao thiếu /
+  giảm giá (bắt buộc khi có), **vỏ thu về** (mặc định = số giao; thiếu thì
+  chọn "Nợ N vỏ" hoặc "Thu cọc"; thu dư = trả nợ vỏ cũ), **thu tiền**: Tiền mặt
+  / Chuyển khoản (hiện **mã VietQR dựng trên máy**, không cần mạng) / Ghi nợ /
+  Chia. Không cho giá giao cao hơn giá đơn.
+- **Đơn tại chỗ** (+ Đơn tại chỗ): chọn khách trong danh sách hoặc **khách lẻ**
+  (khách lẻ không ghi nợ được); chỉ bán trong số **hàng còn trên xe** = xuất −
+  đã giao của chuyến (chưa tính hàng để lại từ chuyến trước — bước 4).
+- **Chạy khi mất sóng**: ghi bằng `writeBatch` (PhieuGiao + DonHang → DaGiao /
+  KhongGiao), KHÔNG await, không gọi máy chủ. Màn hình báo "⏳ N phiếu đang lưu
+  trên máy" tới khi gửi xong. ⚠️ Xoá dữ liệu trình duyệt / đóng tab ẩn danh khi
+  còn phiếu chưa gửi là MẤT phiếu (đã thấy khi thử).
+- `PhieuGiao/{donId}` (đơn tại chỗ: id tự sinh) = **sổ gốc, không sửa, không
+  xoá**. Quy tắc dùng chung app + máy chủ: `functions/src/giaoLogic.ts`.
+- Luật: chỉ người có trong `Chuyen.ToXeUids` (máy chủ đặt lúc xuất kho; Điều
+  phối ghi khi tạo/sửa tổ xe) và chuyến đang `DangGiao`; TaoBoi = mình; tiền
+  mặt + CK + nợ = PhaiThu; CK > 0 thì `CK.TrangThai = ChoXacNhan`; phiếu theo
+  đơn phải đúng chuyến. Đơn chỉ chuyển DaGiao/KhongGiao khi phiếu có thật
+  (`existsAfter`). Chỉ Kế toán/Admin sửa được trường `CK`.
+- Tab **Kế toán** (Admin, Kế toán): *Chuyển khoản chờ xác nhận* (Đã thấy tiền
+  / Không thấy), *Soát giảm giá* theo ngày (giá gốc → giá giao, tổng tiền
+  giảm, lý do) + giao thiếu / không giao, *Tài khoản nhận CK* (Admin; lưu
+  `CaiDat/ThanhToan`, hiện QR thử 1.000đ để quét kiểm tra tên).
+- Đã thử trên giả lập: đủ / thiếu + giảm giá + cọc + CK (QR 238.000đ) / không
+  giao / ghi nợ — 2 phiếu ghi lúc MẤT SÓNG tự gửi khi có sóng; đơn tại chỗ quá
+  hàng bị chặn; khách lẻ ghi nợ bị chặn; kế toán xác nhận CK; soát giảm giá.
+  Luật: tài xế ngoài tổ, tiền không khớp, giả TaoBoi, sửa/xoá phiếu, tự xác
+  nhận CK, đặt đơn Đã giao không phiếu, sửa tài khoản CK đều bị chặn.
+- CHƯA: công nợ khách cộng dồn, hàng/vỏ/tiền cuối chuyến → bước 4.

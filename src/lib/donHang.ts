@@ -6,12 +6,13 @@
 // Đơn CHỤP LẠI tên/địa chỉ khách và tên/giá sản phẩm lúc tạo: khách đổi địa
 // chỉ, sản phẩm đổi giá về sau thì đơn cũ không được đổi theo.
 
-export type TrangThaiDon = 'Moi' | 'DaGan' | 'DaGiao' | 'Huy'
+export type TrangThaiDon = 'Moi' | 'DaGan' | 'DaGiao' | 'KhongGiao' | 'Huy'
 
 export const TEN_TRANG_THAI_DON: Record<TrangThaiDon, string> = {
   Moi: 'Chờ gán xe',
   DaGan: 'Đã gán xe',
   DaGiao: 'Đã giao',
+  KhongGiao: 'Không giao được',
   Huy: 'Đã huỷ',
 }
 
