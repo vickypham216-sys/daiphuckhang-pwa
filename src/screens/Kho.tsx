@@ -7,8 +7,7 @@ import { db } from '../lib/firebase'
 import { goi, loiMayChu } from '../lib/goiMayChu'
 import { dinhDangSo, docSo } from '../lib/so'
 import { hienNgay, ngayVN } from '../lib/donHang'
-import DanhMuc, { type BanGhi } from './DanhMuc'
-import { NHA_CUNG_CAP } from './cauHinhDanhMuc'
+import type { BanGhi } from './DanhMuc'
 import XuatKho from './XuatKho'
 
 type CoId<T> = T & { id: string }
@@ -87,7 +86,7 @@ function FormNhap({ sanPham, ncc, ton, xong, huy }: {
           {ncc.map((n) => <option key={n.id} value={n.id}>{String(n.Ten)}</option>)}
         </select>
       </label>
-      {ncc.length === 0 && <p className="ghi-chu">Chưa có nhà cung cấp. Admin thêm ở mục "Nhà cung cấp".</p>}
+      {ncc.length === 0 && <p className="ghi-chu">Chưa có nhà cung cấp. Admin thêm ở Danh mục → Nhà cung cấp.</p>}
       <label>
         Ngày nhập
         <input type="date" value={ngay} max={ngayVN()} onChange={(e) => setNgay(e.target.value)} />
@@ -156,10 +155,10 @@ function FormDatTon({ sp, ton, xong, huy }: { sp: CoId<BanGhi>; ton?: TonKho; xo
 }
 
 // ── Màn chính ───────────────────────────────────────────────────────────
-export default function Kho({ uid, vaiTro, mucBanDau }: { uid: string; vaiTro: string; mucBanDau?: string }) {
+export default function Kho({ vaiTro, mucBanDau }: { vaiTro: string; mucBanDau?: string }) {
   const laAdmin = vaiTro === 'Admin'
   const duocNhap = laAdmin || vaiTro === 'ThuKho'
-  const [muc, setMuc] = useState<'ton' | 'xuat' | 'nhap' | 'ncc'>((mucBanDau as 'ton') ?? (duocNhap ? 'xuat' : 'ton'))
+  const [muc, setMuc] = useState<'ton' | 'xuat' | 'nhap'>((mucBanDau as 'ton') ?? (duocNhap ? 'xuat' : 'ton'))
   const [moNhap, setMoNhap] = useState(false)
   const [datTon, setDatTon] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)
@@ -186,11 +185,9 @@ export default function Kho({ uid, vaiTro, mucBanDau }: { uid: string; vaiTro: s
         {duocNhap && <button className={muc === 'xuat' ? '' : 'nut-vien'} onClick={() => setMuc('xuat')}>Xuất kho</button>}
         <button className={muc === 'ton' ? '' : 'nut-vien'} onClick={() => setMuc('ton')}>Tồn kho</button>
         <button className={muc === 'nhap' ? '' : 'nut-vien'} onClick={() => setMuc('nhap')}>Phiếu nhập</button>
-        {laAdmin && <button className={muc === 'ncc' ? '' : 'nut-vien'} onClick={() => setMuc('ncc')}>Nhà cung cấp</button>}
       </div>
       {tin && <p className="tin-tot" role="status">{tin}</p>}
 
-      {muc === 'ncc' && <DanhMuc key="ncc" ch={NHA_CUNG_CAP} uid={uid} duocSua={laAdmin} />}
       {muc === 'xuat' && <XuatKho sanPham={sanPham} ton={ton} />}
 
       {(muc === 'ton' || muc === 'nhap') && duocNhap && !moNhap && (

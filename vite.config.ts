@@ -9,18 +9,23 @@ export default defineConfig({
       // Hỏi trước khi tải bản mới, không tự reload giữa lúc tài xế đang
       // lập phiếu.
       registerType: 'prompt',
+      includeAssets: ['favicon-48.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'],
       manifest: {
         name: 'Đại Phúc Khang',
         short_name: 'Đại Phúc Khang',
         description: 'Điều phối xe, giao hàng và đối soát kho — Đại Phúc Khang',
-        theme_color: '#0f5c8c',
-        background_color: '#f4f7fa',
+        theme_color: '#1e40af',
+        background_color: '#f5f7fc',
         display: 'standalone',
         start_url: '/',
         lang: 'vi',
-        // TODO: thêm icon khi có logo (192, 512, maskable 512). Chưa có icon
-        // thì điện thoại không hiện nút "Cài app".
-        icons: [],
+        // Icon sinh từ logo tạm bằng scripts/taoIcon.mjs. Maskable phải là
+        // file riêng (Android cắt theo hình của hãng).
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
         // woff2 phải có: thiếu thì mất sóng là mất font.

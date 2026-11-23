@@ -617,3 +617,35 @@ Vicky: *"Làm Tổng quan trước đi"* (trước khi chạy thử thật).
   đọc được DoiSoatChuyen — Tổng quan trỏ vào truy vấn rỗng cho vai trò đó.
 - Đã thử: 4 vai trò; 6 lối bấm từ "Cần xử lý"; `scripts/raUX.cjs` (nay gồm
   Tổng quan của Admin, Sales, Thủ kho, Kế toán) — không lỗi ở 375/768/1280.
+
+### Giao diện theo chuẩn MIA (23/11/2026)
+
+Vicky (gửi ảnh màn đăng nhập + Tổng quan MIA): *"Update UX/UI, tôi thấy chưa
+đẹp và tối ưu như bên app mia water"*.
+
+- **Hệ màu = MIA** (Xanh hoàng gia: đầu trang #1e40af, nút #2563eb, thanh tab
+  #173d80, vàng nhấn #f2bb58). **Hai bộ theo VAI TRÒ** (`data-giaodien` trên
+  `<html>`): tài xế / phụ xe = **"Sổ Kho"** (nền kẻ ô, góc vuông, viền đậm, chữ
+  gần đen — dưới nắng); còn lại = **"Nhãn Chai"** (bo 18px, nút viên thuốc,
+  viền nhạt). Class chỉ dùng biến (`--chinh`, `--the`, `--bo-the`, `--bo-nut`…).
+- **Đầu trang**: logo · "Đại Phúc Khang" · "Tên · Vai trò"; viên **Có mạng /
+  Mất mạng**; nút **AA** (chữ to 115%, nhớ trên máy); **In** (chỉ màn rộng);
+  Đăng xuất.
+- **Thanh tab có biểu tượng** (SVG vẽ tay, `components/BieuTuong.tsx`, không
+  tải ngoài): điện thoại = neo ĐÁY, viên vàng bọc biểu tượng mục đang mở; từ
+  900px = menu NGANG dưới đầu trang, gạch vàng dưới mục đang mở.
+- Admin còn **7 tab**: Tổng quan · Điều phối · Đơn hàng · Kho · Kế toán · Báo
+  cáo · **Danh mục** (gom Khách hàng, Sản phẩm, Xe, Nhân viên, Nhà cung cấp —
+  như "Quản trị" bên MIA; có "‹ Danh mục" để quay về). NCC chuyển từ Kho sang
+  Danh mục. Sales / Điều phối giữ tab Khách hàng riêng.
+- **Đăng nhập** như MIA: nền xanh nhạt + hai vòng giọt nước; nhãn chữ hoa giãn;
+  ô nền nhạt; "Hiện" mật khẩu; "Vào hệ thống"; dòng "Lần đầu cần có mạng…".
+  Từ 900px chia đôi: giới thiệu trái, form phải.
+- Tổng quan: thẻ "Hôm nay" chứa 4 ô số nền xanh nhạt; "Cần xử lý" và "Chuyến
+  hôm nay" chia 2 cột ở màn rộng. Bảng: tiêu đề cột chữ hoa nhỏ, nền nhạt.
+- **Logo tạm** (giọt nước) + bộ **icon PWA** (`scripts/taoIcon.mjs`, maskable
+  riêng) → điện thoại có nút "Cài app". CÓ LOGO THẬT thì thay SVG trong
+  `BieuTuong.tsx` + `taoIcon.mjs`.
+- Rà máy (`scripts/raUX.cjs`, nay chọn tab bằng `.tabbar`): sửa ô chọn NCC tên
+  dài tràn 11px; nhãn "Tổng quan" bị cắt ở 7 tab/375px (bớt đệm, chữ 9,5px ở
+  màn ≤ 420px); nút đầu trang 44px. Không còn lỗi ở 375 / 768 / 1280.
