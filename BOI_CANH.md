@@ -592,3 +592,28 @@ Vicky: *"check UX/UI của toàn bộ app, prefer như app mia water"*.
   cách trả tiền xếp lưới 2×2 trên điện thoại. ⚠️ Đổi `<li>` sang flex làm MẤT số
   thứ tự của `<ol>` — đã tự đánh lại bằng CSS counter (thứ tự giao là thông tin
   chính của tài xế).
+
+### Tổng quan — Trang chủ (23/11/2026)
+
+Vicky: *"Làm Tổng quan trước đi"* (trước khi chạy thử thật).
+
+- Tab đầu tiên đổi tên **Tổng quan** (mọi vai trò trừ Tài xế / Phụ xe — tài xế
+  chỉ còn MỘT tab "Chuyến của tôi", không hiện dải tab).
+- **Hôm nay**: Doanh thu so với **hôm qua CÙNG GIỜ** (giờ ghi phiếu = `GioMay`
+  trên máy tài xế, không có thì `TaoLuc`; `src/lib/tongQuan.ts cungGioHomQua`),
+  lượt giao, tiền mặt đã thu (+ CK, nợ), đơn cho ngày mai.
+- **Cần xử lý** — chỉ hiện việc đang có, theo vai trò, mỗi dòng **bấm là tới
+  đúng màn + đúng mục**: đơn hôm nay chưa gán xe → Điều phối; chuyến chưa xuất
+  kho, xe về chờ chốt → Kho/Xuất kho; chuyến chờ nộp tiền, CK chờ xác nhận,
+  giảm giá cần soát → Kế toán (đúng mục); chuyến chốt bị lệch → Báo cáo/Tồn kho
+  & vỏ. Việc gấp (vàng): chưa gán xe, chưa xuất, xe về chờ chốt. Không có việc:
+  "✔ Không có việc nào đang chờ".
+- Điều hướng: `App.di(man, muc)` → `mucBanDau` cho Kho / Kế toán / Báo cáo,
+  `key` đổi theo lượt bấm để màn gắn lại đúng mục.
+- **Chuyến hôm nay**: trạng thái + thanh tiến độ "đã giao x/y khách".
+- Kho → Xuất kho nay hiện cả **chuyến "Về kho" của NGÀY KHÁC** (quên chốt hôm
+  qua) — không thì Tổng quan trỏ tới mà không thấy.
+- Chỉ đọc dữ liệu hôm nay / việc đang treo (không nạp lịch sử). Sales không
+  đọc được DoiSoatChuyen — Tổng quan trỏ vào truy vấn rỗng cho vai trò đó.
+- Đã thử: 4 vai trò; 6 lối bấm từ "Cần xử lý"; `scripts/raUX.cjs` (nay gồm
+  Tổng quan của Admin, Sales, Thủ kho, Kế toán) — không lỗi ở 375/768/1280.

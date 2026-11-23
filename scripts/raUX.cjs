@@ -3,9 +3,11 @@
 // Rà UX toàn app: mọi vai trò × mọi tab × các mục/khung mở × 3 khổ màn.
 const { chromium } = require('playwright'); const S = process.argv[2];
 const VAI = {
-  'admin@dpk.vn': [['Trang chủ'], ['Điều phối'], ['Kho', ['Xuất kho', 'Tồn kho', 'Phiếu nhập', 'Nhà cung cấp', '+ Nhập hàng']], ['Kế toán', ['Tiền mặt', 'Chuyển khoản', 'Công nợ', 'Soát giảm giá', 'Tài khoản nhận CK']], ['Báo cáo', ['Doanh thu', 'Tồn kho & vỏ']], ['Đơn hàng', ['Hôm nay', '+ Tạo đơn']], ['Khách hàng', ['+ Thêm khách hàng']], ['Sản phẩm'], ['Xe'], ['Nhân viên']],
+  'admin@dpk.vn': [['Tổng quan'], ['Điều phối'], ['Kho', ['Xuất kho', 'Tồn kho', 'Phiếu nhập', 'Nhà cung cấp', '+ Nhập hàng']], ['Kế toán', ['Tiền mặt', 'Chuyển khoản', 'Công nợ', 'Soát giảm giá', 'Tài khoản nhận CK']], ['Báo cáo', ['Doanh thu', 'Tồn kho & vỏ']], ['Đơn hàng', ['Hôm nay', '+ Tạo đơn']], ['Khách hàng', ['+ Thêm khách hàng']], ['Sản phẩm'], ['Xe'], ['Nhân viên']],
   'tx1@dpk.vn': [['Chuyến của tôi', ['@Giao', '+ Thu nợ', '+ Đơn tại chỗ']]],
-  'sales@dpk.vn': [['Đơn hàng', ['Hôm nay']]],
+  'sales@dpk.vn': [['Tổng quan'], ['Đơn hàng', ['Hôm nay']]],
+  'kho@dpk.vn': [['Tổng quan'], ['Báo cáo']],
+  'kt@dpk.vn': [['Tổng quan']],
 };
 const do_ = () => {
   const W = innerWidth, kq = { tran: document.documentElement.scrollWidth - W, nho: [], ra: [], cat: [], tuongPhan: [] };
@@ -44,7 +46,7 @@ const do_ = () => {
       if (email === 'admin@dpk.vn' && w === 375) { const r = await p.evaluate(do_); if (JSON.stringify(r) !== '{"tran":0,"nho":[],"ra":[],"cat":[],"tuongPhan":[]}') tom[`${w} đăng nhập`] = r; }
       await p.fill('input[autocomplete=username]', email); await p.fill('input[type=password]', 'matkhau123'); await p.click('button[type=submit]'); await p.waitForSelector('.thanh-tren');
       for (const [tab, mucs] of tabs) {
-        await p.locator('.thanh-tab button', { hasText: tab }).first().click(); await p.waitForTimeout(900);
+        if (await p.locator('.thanh-tab').count()) await p.locator('.thanh-tab button', { hasText: tab }).first().click(); await p.waitForTimeout(900);
         const chay = async (ten) => { const r = await p.evaluate(do_); const co = r.tran || r.nho.length || r.ra.length || r.cat.length || r.tuongPhan.length; if (co) tom[`${w} ${email.split('@')[0]} ${ten}`] = r; if (w === 375) await p.screenshot({ path: `${S}/ux-${email.split('@')[0]}-${ten.replace(/[^a-z0-9]/gi, '_')}.png`, fullPage: true }); };
         await chay(tab);
         for (const m of mucs ?? []) {

@@ -157,9 +157,9 @@ function BaoCaoDoanhThu() {
 }
 
 /** Tab Báo cáo: Doanh thu (Admin, Kế toán) · Tồn kho & vỏ (Admin, Kế toán, Thủ kho). */
-export default function BaoCao({ vaiTro }: { vaiTro: string }) {
+export default function BaoCao({ vaiTro, mucBanDau }: { vaiTro: string; mucBanDau?: string }) {
   const xemDoanhThu = vaiTro === 'Admin' || vaiTro === 'KeToan'
-  const [muc, setMuc] = useState<'dt' | 'kho'>(xemDoanhThu ? 'dt' : 'kho')
+  const [muc, setMuc] = useState<'dt' | 'kho'>((mucBanDau as 'dt') ?? (xemDoanhThu ? 'dt' : 'kho'))
   return (
     <>
       {xemDoanhThu && (

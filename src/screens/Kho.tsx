@@ -156,10 +156,10 @@ function FormDatTon({ sp, ton, xong, huy }: { sp: CoId<BanGhi>; ton?: TonKho; xo
 }
 
 // ── Màn chính ───────────────────────────────────────────────────────────
-export default function Kho({ uid, vaiTro }: { uid: string; vaiTro: string }) {
+export default function Kho({ uid, vaiTro, mucBanDau }: { uid: string; vaiTro: string; mucBanDau?: string }) {
   const laAdmin = vaiTro === 'Admin'
   const duocNhap = laAdmin || vaiTro === 'ThuKho'
-  const [muc, setMuc] = useState<'ton' | 'xuat' | 'nhap' | 'ncc'>(duocNhap ? 'xuat' : 'ton')
+  const [muc, setMuc] = useState<'ton' | 'xuat' | 'nhap' | 'ncc'>((mucBanDau as 'ton') ?? (duocNhap ? 'xuat' : 'ton'))
   const [moNhap, setMoNhap] = useState(false)
   const [datTon, setDatTon] = useState<string | null>(null)
   const [tin, setTin] = useState<string | null>(null)

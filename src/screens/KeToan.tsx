@@ -249,8 +249,8 @@ function TaiKhoanCK() {
   )
 }
 
-export default function KeToan({ uid, tenToi, laAdmin }: { uid: string; tenToi: string; laAdmin: boolean }) {
-  const [muc, setMuc] = useState<'tien' | 'ck' | 'no' | 'soat' | 'tk'>('tien')
+export default function KeToan({ uid, tenToi, laAdmin, mucBanDau }: { uid: string; tenToi: string; laAdmin: boolean; mucBanDau?: string }) {
+  const [muc, setMuc] = useState<'tien' | 'ck' | 'no' | 'soat' | 'tk'>((mucBanDau as 'tien') ?? 'tien')
   return (
     <div className="man">
       <div className="hang-nut nho">

@@ -308,3 +308,19 @@ a.goi { display: inline-flex; align-items: center; min-height: 44px; padding: 0 
 .ds-don-chuyen li { padding-left: 0; }
 .ds-don-chuyen li::before { counter-increment: thu-tu; content: counter(thu-tu) "."; font-weight: 700; min-width: 22px; line-height: 1.5; }
 .ds-don-chuyen li > span:first-child { flex: 1 1 0%; min-width: 0; }
+
+/* ── Tổng quan ───────────────────────────────────────────────────────── */
+.ds-viec { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.viec { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; text-align: left;
+  background: #fff; color: var(--chu); border: 1px solid var(--vien); font-weight: 500; min-height: 56px; }
+.viec strong { font-size: 1.3rem; color: var(--chinh); min-width: 2ch; text-align: right; }
+.viec small { display: block; color: var(--chu-phu); font-weight: 400; font-size: 0.85rem; }
+.viec > span:last-child { color: var(--chinh); font-size: 1.4rem; }
+.viec-gap { border-color: #f5b041; background: #fffaeb; }
+.viec-gap strong { color: #93370d; }
+.ds-chuyen-tq { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ds-chuyen-tq li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--vien); flex-wrap: wrap; }
+.ds-chuyen-tq small { display: block; color: var(--chu-phu); }
+.tien-do { display: grid; justify-items: end; gap: 4px; min-width: 110px; }
+.thanh-tien-do { width: 110px; height: 8px; background: var(--nen); border-radius: 4px; overflow: hidden; }
+.thanh-tien-do span { display: block; height: 100%; background: var(--chinh); border-radius: 4px; }
