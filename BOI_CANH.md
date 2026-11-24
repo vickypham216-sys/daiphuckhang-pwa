@@ -649,3 +649,10 @@ Vicky (gửi ảnh màn đăng nhập + Tổng quan MIA): *"Update UX/UI, tôi t
 - Rà máy (`scripts/raUX.cjs`, nay chọn tab bằng `.tabbar`): sửa ô chọn NCC tên
   dài tràn 11px; nhãn "Tổng quan" bị cắt ở 7 tab/375px (bớt đệm, chữ 9,5px ở
   màn ≤ 420px); nút đầu trang 44px. Không còn lỗi ở 375 / 768 / 1280.
+
+## Chọn sản phẩm bằng ô tìm (24/11/2026)
+
+- Form Đơn hàng không liệt kê hết sản phẩm nữa. Người lên đơn gõ tên vào ô "+ Thêm sản phẩm", app gợi ý theo
+  từng từ, không cần dấu ("kiem up" → Lavie Kiềm Úp 19L, "19" → mọi loại 19L). Enter chọn gợi ý đầu, rồi nhảy
+  thẳng vào ô số lượng. Dòng nào thừa thì bấm ✕. Sản phẩm đã có trong đơn không hiện lại trong gợi ý.
+- Trên điện thoại, tên sản phẩm nằm một dòng riêng, ô số lượng và ô giá nằm ở dòng dưới.
