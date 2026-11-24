@@ -178,7 +178,14 @@ textarea { resize: vertical; }
 .khach-da-chon button { min-height: 36px; padding: 6px 12px; }
 
 .bang-sp { display: grid; gap: 6px; }
-.bang-sp-dau, .bang-sp-dong { display: grid; grid-template-columns: 1fr 72px 104px; gap: 8px; align-items: center; }
+.bang-sp-dau, .bang-sp-dong { display: grid; grid-template-columns: 1fr 64px 96px 44px; gap: 6px; align-items: center; }
+.bang-sp-dong + .bang-sp-dong { border-top: 1px solid var(--vien); padding-top: 6px; }
+@media (max-width: 480px) {
+  .bang-sp-dau, .bang-sp-dong { grid-template-columns: 96px 1fr 44px; }
+  .bang-sp-dau span:first-child { display: none; }
+  .bang-sp-dong > span { grid-column: 1 / -1; }
+}
+.nut-xoa-dong { min-width: 44px; min-height: 44px; padding: 0; background: transparent; color: var(--chu-phu); border: 1px solid var(--vien); font-weight: 400; }
 .bang-sp-dau { font-size: 0.85rem; color: var(--chu-phu); }
 .bang-sp-dong small { display: block; color: var(--chu-phu); font-size: 0.8rem; }
 .bang-sp-dong input { padding: 10px 8px; text-align: right; min-width: 0; }

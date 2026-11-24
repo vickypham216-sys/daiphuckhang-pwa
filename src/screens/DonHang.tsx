@@ -58,6 +58,55 @@ function ChonKhach({ khach, chon }: { khach: CoId<BanGhi>[]; chon: (k: CoId<BanG
   )
 }
 
+// Khớp khi MỌI từ gõ vào đều có trong tên (không dấu): "kiem up" → "Lavie Kiềm Úp 19L".
+export function khopTen(ten: string, tim: string) {
+  const t = boDau(ten)
+  return boDau(tim).split(/\s+/).filter(Boolean).every((w) => t.includes(w))
+}
+
+function ChonSanPham({ ds, them }: { ds: CoId<BanGhi>[]; them: (id: string) => void }) {
+  const [tim, setTim] = useState('')
+  const q = tim.trim()
+  const kq = q ? ds.filter((s) => khopTen(String(s.Ten), q)).slice(0, 8) : []
+  function chon(id: string) {
+    them(id)
+    setTim('')
+  }
+  return (
+    <div className="chon-khach">
+      <input
+        type="search"
+        value={tim}
+        onChange={(e) => setTim(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && kq.length > 0) {
+            e.preventDefault()
+            chon(kq[0].id)
+          }
+        }}
+        placeholder="+ Thêm sản phẩm (gõ tên)"
+        aria-label="Tìm sản phẩm"
+      />
+      {q && (
+        <ul className="ds-goi-y">
+          {kq.map((s) => (
+            <li key={s.id}>
+              <button type="button" onClick={() => chon(s.id)}>
+                <strong>{String(s.Ten)}</strong>
+                <small>
+                  {String(s.DonVi ?? '').toLowerCase()}
+                  {s.CoVo ? ' · có vỏ' : ''} · {dinhDangSo(Number(s.GiaBan ?? 0))}đ
+                </small>
+              </button>
+            </li>
+          ))}
+          {kq.length === 0 && <li className="ghi-chu">Không thấy sản phẩm (hoặc đã có trong đơn).</li>}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 interface FormProps {
   sanPham: CoId<BanGhi>[]
   khach: CoId<BanGhi>[]
@@ -81,6 +130,9 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
   const [gia, setGia] = useState<Record<string, number>>(() =>
     Object.fromEntries((dau?.Dong ?? []).map((d) => [d.SanPhamId, d.DonGia])),
   )
+  // Thứ tự sản phẩm đã thêm vào đơn (theo lúc thêm).
+  const [daChon, setDaChon] = useState<string[]>(() => (dau?.Dong ?? []).map((d) => d.SanPhamId))
+  const [oSlMoi, setOSlMoi] = useState<string | null>(null)
   const [ghiChu, setGhiChu] = useState(dau?.GhiChu ?? '')
   const [loi, setLoi] = useState<string | null>(null)
   const [ban, setBan] = useState(false)
@@ -94,7 +146,30 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
     return [...sanPham, ...cu].sort((a, b) => String(a.Ten).localeCompare(String(b.Ten), 'vi'))
   }, [sanPham, dau])
 
-  const dong: DongDon[] = dsSp
+  const spTheoId = new Map(dsSp.map((s) => [s.id, s]))
+  const dsDaChon = daChon.map((id) => spTheoId.get(id)).filter((s): s is CoId<BanGhi> => !!s)
+  const conLai = sanPham.filter((s) => !daChon.includes(s.id))
+
+  function themSp(id: string) {
+    setDaChon((d) => (d.includes(id) ? d : [...d, id]))
+    setOSlMoi(id)
+  }
+  // Thêm xong nhảy vào ô số lượng của dòng mới (sau khi dòng đã vẽ ra).
+  useEffect(() => {
+    if (!oSlMoi) return
+    document.getElementById(`sl-${oSlMoi}`)?.focus()
+    setOSlMoi(null)
+  }, [oSlMoi])
+  function boSp(id: string) {
+    setDaChon((d) => d.filter((x) => x !== id))
+    setSl((m) => {
+      const r = { ...m }
+      delete r[id]
+      return r
+    })
+  }
+
+  const dong: DongDon[] = dsDaChon
     .map((s) => ({
       SanPhamId: s.id,
       Ten: String(s.Ten),
@@ -176,19 +251,23 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
       </label>
 
       <div className="bang-sp">
-        <div className="bang-sp-dau">
-          <span>Sản phẩm</span>
-          <span>Số lượng</span>
-          <span>Đơn giá (đ)</span>
-        </div>
-        {dsSp.length === 0 && <p className="ghi-chu">Chưa có sản phẩm. Admin thêm ở tab Sản phẩm.</p>}
-        {dsSp.map((s) => (
+        {dsDaChon.length > 0 && (
+          <div className="bang-sp-dau">
+            <span>Sản phẩm</span>
+            <span>Số lượng</span>
+            <span>Đơn giá (đ)</span>
+            <span />
+          </div>
+        )}
+        {dsDaChon.length === 0 && <p className="ghi-chu">Chưa có sản phẩm nào. Gõ tên ở ô bên dưới để thêm.</p>}
+        {dsDaChon.map((s) => (
           <div key={s.id} className={'bang-sp-dong' + (Number(sl[s.id] || 0) > 0 ? ' co-sl' : '')}>
             <span>
               {String(s.Ten)}
               <small>{String(s.DonVi ?? '').toLowerCase()}{s.CoVo ? ' · có vỏ' : ''}</small>
             </span>
             <input
+              id={`sl-${s.id}`}
               inputMode="numeric"
               aria-label={`Số lượng ${String(s.Ten)}`}
               value={sl[s.id] ?? ''}
@@ -204,8 +283,16 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
                 setGia({ ...gia, [s.id]: n === null || Number.isNaN(n) ? 0 : n })
               }}
             />
+            <button type="button" className="nut-xoa-dong" aria-label={`Bỏ ${String(s.Ten)}`} onClick={() => boSp(s.id)}>
+              ✕
+            </button>
           </div>
         ))}
+        {sanPham.length === 0 ? (
+          <p className="ghi-chu">Chưa có sản phẩm. Admin thêm ở Danh mục → Sản phẩm.</p>
+        ) : (
+          <ChonSanPham ds={conLai} them={themSp} />
+        )}
         <div className="bang-sp-tong">
           Tổng: <strong>{dinhDangSo(tongTien(dong))}đ</strong>
         </div>
