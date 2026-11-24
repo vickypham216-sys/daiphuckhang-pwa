@@ -38,6 +38,8 @@ export interface DonHang {
   ChuyenId: string | null
   /** Nhãn chuyến khi đã gán, vd "51C-123.45 · C1" — để Sales thấy đơn đi xe nào. */
   XeGan?: string | null
+  /** Xe người lên đơn chọn khi xe đó chưa có chuyến: khi điều phối tạo chuyến cho xe này, đơn tự vào chuyến. */
+  XeDuKien?: { XeId: string; BienSo: string } | null
   TaoBoi: string
   TenNguoiTao: string
   LyDoHuy?: string

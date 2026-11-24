@@ -13,6 +13,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { ganDonVaoChuyen } from '../lib/ganDon'
 import { dinhDangSo } from '../lib/so'
 import { hienNgay, ngayVN, tomTatDong, type DonHang as Don } from '../lib/donHang'
 import {
@@ -62,6 +63,7 @@ function FormChuyen({
   nhanVien,
   chuyenNgay,
   chuyenGanDay,
+  donCho,
   uid,
   xong,
   huy,
@@ -72,6 +74,7 @@ function FormChuyen({
   nhanVien: NV[]
   chuyenNgay: CoId<Chuyen>[]
   chuyenGanDay: CoId<Chuyen>[]
+  donCho: CoId<Don>[]
   uid: string
   xong: (tin: string) => void
   huy: () => void
@@ -102,6 +105,8 @@ function FormChuyen({
     } else setDaDienSan(null)
   }
 
+  const donDuKien = dau ? [] : donCho.filter((d) => d.XeDuKien?.XeId === xeId)
+
   const trung = nguoiBiTrung(
     [taiXe, ...phuXe].filter(Boolean),
     chuyenNgay.filter((c) => c.id !== dau?.id),
@@ -128,7 +133,7 @@ function FormChuyen({
       } else {
         const x = xe.find((v) => v.id === xeId)!
         const so = soChuyenTiepTheo(chuyenNgay, xeId)
-        await addDoc(collection(db, 'Chuyen'), {
+        const ref = await addDoc(collection(db, 'Chuyen'), {
           Ngay: ngay,
           XeId: xeId,
           BienSo: x.BienSo,
@@ -142,7 +147,18 @@ function FormChuyen({
           TaoBoi: uid,
           TaoLuc: serverTimestamp(),
         })
-        xong(`Đã tạo chuyến ${nhanChuyen({ BienSo: x.BienSo, SoChuyen: so })}. Chọn đơn rồi bấm "Gán vào chuyến này".`)
+        const nhan = nhanChuyen({ BienSo: x.BienSo, SoChuyen: so })
+        // Đơn người lên đơn đã chọn sẵn xe này → tự vào chuyến mới.
+        const duKien = donDuKien.map((d) => d.id)
+        if (duKien.length) {
+          try {
+            await ganDonVaoChuyen(ref.id, duKien, uid)
+            return xong(`Đã tạo chuyến ${nhan} và tự gán ${duKien.length} đơn dự kiến cho xe này.`)
+          } catch (e) {
+            return xong(`Đã tạo chuyến ${nhan}, nhưng chưa tự gán được đơn dự kiến (${loiGhi(e)}). Gán tay bên dưới.`)
+          }
+        }
+        xong(`Đã tạo chuyến ${nhan}. Chọn đơn rồi bấm "Gán vào chuyến này".`)
       }
     } catch (e) {
       setLoi(loiGhi(e))
@@ -169,6 +185,9 @@ function FormChuyen({
       )}
       {xe.length === 0 && !dau && <p className="ghi-chu">Chưa có xe. Admin thêm ở tab Xe.</p>}
       {daDienSan && <p className="ghi-chu">{daDienSan}</p>}
+      {donDuKien.length > 0 && (
+        <p className="ghi-chu">🚚 {donDuKien.length} đơn đã chọn sẵn xe này ({donDuKien.map((d) => d.TenKhach).join(', ')}) sẽ tự vào chuyến.</p>
+      )}
       <label>
         Tài xế *
         <select
@@ -291,23 +310,7 @@ export default function DieuPhoi({ uid }: { uid: string }) {
   const ganVao = (c: CoId<Chuyen>) => {
     const ids = donCho.map((d) => d.id).filter((id) => chon.has(id)) // giữ thứ tự đang hiện
     return lam(async () => {
-      await runTransaction(db, async (tx) => {
-        const refC = doc(db, 'Chuyen', c.id)
-        const sc = await tx.get(refC)
-        if (sc.data()?.TrangThai !== 'LapKeHoach') throw new Error('Chuyến này đã khoá (đã xuất kho hoặc đã huỷ).')
-        const refs = ids.map((id) => doc(db, 'DonHang', id))
-        const snaps = await Promise.all(refs.map((r) => tx.get(r)))
-        for (const s of snaps) {
-          const d = s.data() as Don | undefined
-          if (!d || d.TrangThai !== 'Moi' || d.ChuyenId)
-            throw new Error(`Đơn của ${d?.TenKhach ?? '?'} không còn chờ gán (vừa được gán hoặc huỷ). Thử lại.`)
-        }
-        const nhan = nhanChuyen(c)
-        refs.forEach((r) =>
-          tx.update(r, { ChuyenId: c.id, TrangThai: 'DaGan', XeGan: nhan, SuaLuc: serverTimestamp(), SuaBoi: uid }),
-        )
-        tx.update(refC, { DonIds: [...(sc.data()!.DonIds as string[]), ...ids], SuaLuc: serverTimestamp(), SuaBoi: uid })
-      })
+      await ganDonVaoChuyen(c.id, ids, uid)
       setChon(new Set())
     }, `Đã gán ${ids.length} đơn vào ${nhanChuyen(c)}.`)
   }
@@ -318,7 +321,7 @@ export default function DieuPhoi({ uid }: { uid: string }) {
         const refC = doc(db, 'Chuyen', c.id)
         const sc = await tx.get(refC)
         if (sc.data()?.TrangThai !== 'LapKeHoach') throw new Error('Chuyến này đã khoá.')
-        tx.update(doc(db, 'DonHang', donId), { ChuyenId: null, TrangThai: 'Moi', XeGan: null, SuaLuc: serverTimestamp(), SuaBoi: uid })
+        tx.update(doc(db, 'DonHang', donId), { ChuyenId: null, TrangThai: 'Moi', XeGan: null, XeDuKien: null, SuaLuc: serverTimestamp(), SuaBoi: uid })
         tx.update(refC, { DonIds: (sc.data()!.DonIds as string[]).filter((x) => x !== donId), SuaLuc: serverTimestamp(), SuaBoi: uid })
       })
     }, `Đã bỏ đơn của ${donTheoId.get(donId)?.TenKhach ?? ''} khỏi ${nhanChuyen(c)}.`)
@@ -341,6 +344,7 @@ export default function DieuPhoi({ uid }: { uid: string }) {
           nhanVien={nhanVien}
           chuyenNgay={chuyenRaw ?? []}
           chuyenGanDay={ganDay ?? []}
+          donCho={donCho}
           uid={uid}
           xong={(t) => {
             setTin(t)
@@ -402,6 +406,7 @@ export default function DieuPhoi({ uid }: { uid: string }) {
                   <strong>{d.TenKhach}</strong>
                   <small>📍 {d.DiaChi}</small>
                   <small>{tomTatDong(d.Dong)}</small>
+                  {d.XeDuKien && <small>🚚 Dự kiến xe {d.XeDuKien.BienSo}</small>}
                 </span>
               </label>
             </li>

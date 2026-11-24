@@ -262,7 +262,7 @@ export default function App() {
         ) : manHien === 'dieuphoi' ? (
           <DieuPhoi uid={phien.uid} />
         ) : manHien === 'donhang' ? (
-          <DonHang uid={phien.uid} tenToi={phien.hoSo.HoTen} />
+          <DonHang uid={phien.uid} tenToi={phien.hoSo.HoTen} duocGan={laAdmin || vaiTro === 'DieuPhoi'} />
         ) : manHien === 'nhanvien' ? (
           <NhanVien uidToi={phien.uid} emailToi={phien.email} />
         ) : manHien === 'xe' ? (

@@ -656,3 +656,13 @@ Vicky (gửi ảnh màn đăng nhập + Tổng quan MIA): *"Update UX/UI, tôi t
   từng từ, không cần dấu ("kiem up" → Lavie Kiềm Úp 19L, "19" → mọi loại 19L). Enter chọn gợi ý đầu, rồi nhảy
   thẳng vào ô số lượng. Dòng nào thừa thì bấm ✕. Sản phẩm đã có trong đơn không hiện lại trong gợi ý.
 - Trên điện thoại, tên sản phẩm nằm một dòng riêng, ô số lượng và ô giá nằm ở dòng dưới.
+
+## Chọn xe ngay lúc tạo đơn (24/11/2026)
+
+- Form đơn có ô **Xe giao**. Admin/Điều phối thấy từng chuyến đang xếp trong ngày ("51D · C1 · Anh Năm"):
+  chọn thì đơn vào thẳng chuyến đó, cùng transaction với màn Điều phối (`src/lib/ganDon.ts`).
+- Xe chưa có chuyến đang xếp (hoặc người lên đơn là Sales) → đơn lưu `XeDuKien {XeId, BienSo}`, vẫn "Chờ gán
+  xe". Khi Điều phối **tạo chuyến** cho xe đó, mọi đơn chờ dự kiến xe này tự vào chuyến mới.
+- Điều phối bỏ đơn khỏi chuyến → xoá luôn `XeDuKien` (để chuyến sau không tự kéo lại). Luật `ganHoacBoDon`
+  thêm `XeDuKien` vào danh sách trường được đổi.
+- Chọn xe khi danh sách chuyến chưa tải xong: app tự chuyển sang chuyến đầu đang xếp của chính xe đó.

@@ -14,6 +14,8 @@ import {
   type DongDon,
 } from '../lib/donHang'
 import { boDau, type BanGhi } from './DanhMuc'
+import { luaChonXe, type Chuyen } from '../lib/dieuPhoi'
+import { ganDonVaoChuyen } from '../lib/ganDon'
 
 type CoId<T> = T & { id: string }
 
@@ -109,6 +111,9 @@ function ChonSanPham({ ds, them }: { ds: CoId<BanGhi>[]; them: (id: string) => v
 
 interface FormProps {
   sanPham: CoId<BanGhi>[]
+  xe: CoId<BanGhi>[]
+  /** Admin, Điều phối: được gán đơn thẳng vào chuyến đang xếp. */
+  duocGan: boolean
   khach: CoId<BanGhi>[]
   dau?: CoId<Don>
   uid: string
@@ -117,7 +122,7 @@ interface FormProps {
   huy: () => void
 }
 
-function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
+function FormDon({ sanPham, xe, duocGan, khach, dau, uid, tenToi, xong, huy }: FormProps) {
   const homNay = ngayVN()
   const [kh, setKh] = useState<{ id: string; Ten: string; DiaChi: string; SoDienThoai: string | null; GhiChu: string | null } | null>(
     dau ? { id: dau.KhachHangId, Ten: dau.TenKhach, DiaChi: dau.DiaChi, SoDienThoai: dau.SoDienThoai, GhiChu: dau.GhiChuKhach } : null,
@@ -134,6 +139,24 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
   const [daChon, setDaChon] = useState<string[]>(() => (dau?.Dong ?? []).map((d) => d.SanPhamId))
   const [oSlMoi, setOSlMoi] = useState<string | null>(null)
   const [ghiChu, setGhiChu] = useState(dau?.GhiChu ?? '')
+  // Xe giao: '' = để điều phối xếp; 'c:<chuyến>' = vào thẳng chuyến; 'x:<xe>' = xe dự kiến.
+  const [xeChon, setXeChon] = useState(dau?.XeDuKien ? `x:${dau.XeDuKien.XeId}` : '')
+  const [chuyen, setChuyen] = useState<CoId<Chuyen>[]>([])
+  useEffect(() => {
+    if (!duocGan) return
+    return onSnapshot(query(collection(db, 'Chuyen'), where('Ngay', '==', ngay)), (s) =>
+      setChuyen(s.docs.map((x) => ({ ...(x.data() as Chuyen), id: x.id }))),
+    )
+  }, [ngay, duocGan])
+  const dsXe = xe.map((x) => ({ id: x.id, BienSo: String(x.BienSo), TenXe: (x.TenXe as string) ?? null }))
+  const luaChon = luaChonXe(dsXe, chuyen, duocGan)
+  // Lựa chọn cũ không còn: xe vừa có chuyến đang xếp → chuyến đầu của xe đó;
+  // còn lại (đổi ngày, chuyến đã khoá) → "để điều phối xếp".
+  const xeHien = luaChon.some((o) => o.gt === xeChon)
+    ? xeChon
+    : xeChon.startsWith('x:')
+      ? (luaChon.find((o) => o.gt.startsWith('c:') && chuyen.find((c) => `c:${c.id}` === o.gt)?.XeId === xeChon.slice(2))?.gt ?? '')
+      : ''
   const [loi, setLoi] = useState<string | null>(null)
   const [ban, setBan] = useState(false)
 
@@ -185,6 +208,8 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
     const l = kiemTraDon({ KhachHangId: kh?.id ?? '', NgayGiao: ngay, Dong: dong }, homNay)
     if (l) return setLoi(l)
     setBan(true)
+    const xeX = xeHien.startsWith('x:') ? dsXe.find((x) => x.id === xeHien.slice(2)) : undefined
+    const xeDuKien = xeX ? { XeId: xeX.id, BienSo: xeX.BienSo } : null
     const du = {
       KhachHangId: kh!.id,
       TenKhach: kh!.Ten,
@@ -194,13 +219,17 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
       NgayGiao: ngay,
       Dong: dong,
       GhiChu: ghiChu.trim() || null,
+      XeDuKien: xeDuKien,
     }
     try {
+      let id: string
+      let tinXong: string
       if (dau) {
         await updateDoc(doc(db, 'DonHang', dau.id), { ...du, SuaLuc: serverTimestamp(), SuaBoi: uid })
-        xong(`Đã sửa đơn của ${kh!.Ten}.`)
+        id = dau.id
+        tinXong = `Đã sửa đơn của ${kh!.Ten}`
       } else {
-        await addDoc(collection(db, 'DonHang'), {
+        const ref = await addDoc(collection(db, 'DonHang'), {
           ...du,
           TrangThai: 'Moi',
           ChuyenId: null,
@@ -208,8 +237,18 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
           TenNguoiTao: tenToi,
           TaoLuc: serverTimestamp(),
         })
-        xong(`Đã tạo đơn cho ${kh!.Ten}, giao ${hienNgay(ngay)}.`)
+        id = ref.id
+        tinXong = `Đã tạo đơn cho ${kh!.Ten}, giao ${hienNgay(ngay)}`
       }
+      if (xeHien.startsWith('c:')) {
+        try {
+          const nhan = await ganDonVaoChuyen(xeHien.slice(2), [id], uid)
+          return xong(`${tinXong}, đã vào chuyến ${nhan}.`)
+        } catch (e) {
+          return xong(`${tinXong}, nhưng CHƯA vào chuyến được (${e instanceof Error ? e.message : String(e)}). Gán ở tab Điều phối.`)
+        }
+      }
+      xong(xeDuKien ? `${tinXong}. Xe ${xeDuKien.BienSo} chưa có chuyến: đơn sẽ tự vào khi điều phối tạo chuyến cho xe này.` : `${tinXong}.`)
     } catch (e) {
       setLoi((e as { code?: string }).code === 'permission-denied' ? 'Không lưu được: đơn đã được gán xe hoặc bạn không có quyền.' : String(e))
       setBan(false)
@@ -298,6 +337,23 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
         </div>
       </div>
 
+      {xe.length > 0 && (
+        <label>
+          Xe giao
+          <select value={xeHien} onChange={(e) => setXeChon(e.target.value)}>
+            <option value="">— Để điều phối xếp —</option>
+            {luaChon.map((o) => (
+              <option key={o.gt} value={o.gt}>
+                {o.nhan}
+              </option>
+            ))}
+          </select>
+          {xeHien.startsWith('x:') && (
+            <small className="ghi-chu">Xe này chưa có chuyến ngày {hienNgay(ngay)}. Đơn sẽ tự vào chuyến khi điều phối tạo chuyến cho xe.</small>
+          )}
+        </label>
+      )}
+
       <label>
         Ghi chú đơn
         <textarea rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} placeholder="Giao trước 9h, thu tiền mặt…" />
@@ -315,7 +371,7 @@ function FormDon({ sanPham, khach, dau, uid, tenToi, xong, huy }: FormProps) {
   )
 }
 
-export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }) {
+export default function DonHang({ uid, tenToi, duocGan }: { uid: string; tenToi: string; duocGan: boolean }) {
   const [ngay, setNgay] = useState(ngayVN(1))
   const [ds, setDs] = useState<CoId<Don>[] | null>(null)
   const [loiTai, setLoiTai] = useState<string | null>(null)
@@ -324,6 +380,7 @@ export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }
   const [tin, setTin] = useState<string | null>(null)
   const sanPham = useDanhSach('SanPham')
   const khach = useDanhSach('KhachHang')
+  const xe = useDanhSach('Xe')
 
   useEffect(() => {
     setDs(null)
@@ -359,6 +416,8 @@ export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }
       <div className="man">
         <FormDon
           sanPham={sanPham}
+          xe={xe}
+          duocGan={duocGan}
           khach={khach}
           dau={form === 'moi' ? undefined : form}
           uid={uid}
@@ -402,6 +461,7 @@ export default function DonHang({ uid, tenToi }: { uid: string; tenToi: string }
                   <strong>{d.TenKhach}</strong>
                   <small>{tomTatDong(d.Dong)}</small>
                   {d.XeGan && <small>🚚 {d.XeGan}</small>}
+                  {!d.XeGan && d.XeDuKien && d.TrangThai === 'Moi' && <small>🚚 Dự kiến xe {d.XeDuKien.BienSo}</small>}
                 </span>
                 <span className={'nhan-tt tt-' + d.TrangThai}>{TEN_TRANG_THAI_DON[d.TrangThai]}</span>
               </button>
