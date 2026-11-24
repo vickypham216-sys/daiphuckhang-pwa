@@ -127,14 +127,14 @@ service cloud.firestore {
     function laDieuPhoi() {
       return vaiTro() in ['Admin', 'DieuPhoi'];
     }
-    // Gán đơn vào chuyến / bỏ ra: chỉ đụng ChuyenId, TrangThai, XeGan; chuyến
+    // Gán đơn vào chuyến / bỏ ra: chỉ đụng ChuyenId, TrangThai, XeGan, XeDuKien; chuyến
     // phải còn "LapKeHoach" và danh sách đơn của chuyến (SAU lần ghi này) phải
     // khớp — app ghi đơn và chuyến trong cùng một transaction.
     function ganHoacBoDon(id) {
       let moi = request.resource.data;
       let cu = resource.data;
       return laDieuPhoi()
-        && moi.diff(cu).affectedKeys().hasOnly(['ChuyenId', 'TrangThai', 'XeGan', 'SuaLuc', 'SuaBoi'])
+        && moi.diff(cu).affectedKeys().hasOnly(['ChuyenId', 'TrangThai', 'XeGan', 'XeDuKien', 'SuaLuc', 'SuaBoi'])
         && (
           (cu.TrangThai == 'Moi' && cu.ChuyenId == null
             && moi.TrangThai == 'DaGan' && moi.ChuyenId is string

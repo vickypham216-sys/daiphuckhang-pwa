@@ -104,3 +104,24 @@ export function toXeGanNhat<C extends Pick<Chuyen, 'XeId' | 'Ngay' | 'SoChuyen' 
     .sort((a, b) => (a.Ngay === b.Ngay ? b.SoChuyen - a.SoChuyen : a.Ngay < b.Ngay ? 1 : -1))
   return cua[0] ? { TaiXe: cua[0].TaiXe, PhuXe: cua[0].PhuXe } : null
 }
+
+/**
+ * Lựa chọn "Xe giao" trong form đơn. Xe có chuyến đang xếp (LapKeHoach) trong
+ * ngày → mỗi chuyến một lựa chọn "c:<id>" (đơn vào thẳng chuyến, chỉ khi người
+ * lên đơn được gán). Xe chưa có chuyến đang xếp → "x:<xeId>" (ghi xe dự kiến).
+ */
+export function luaChonXe(
+  xe: { id: string; BienSo: string; TenXe?: string | null }[],
+  chuyen: (Pick<Chuyen, 'XeId' | 'BienSo' | 'SoChuyen' | 'TrangThai'> & { id: string; TaiXe: { HoTen: string } })[],
+  duocGan: boolean,
+): { gt: string; nhan: string }[] {
+  const kq: { gt: string; nhan: string }[] = []
+  for (const x of [...xe].sort((a, b) => a.BienSo.localeCompare(b.BienSo))) {
+    const cx = duocGan
+      ? chuyen.filter((c) => c.XeId === x.id && c.TrangThai === 'LapKeHoach').sort((a, b) => a.SoChuyen - b.SoChuyen)
+      : []
+    if (cx.length) for (const c of cx) kq.push({ gt: `c:${c.id}`, nhan: `${nhanChuyen(c)} · ${c.TaiXe.HoTen}` })
+    else kq.push({ gt: `x:${x.id}`, nhan: `${x.BienSo}${x.TenXe ? ` · ${x.TenXe}` : ''} (chưa có chuyến)` })
+  }
+  return kq
+}
